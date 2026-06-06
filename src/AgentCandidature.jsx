@@ -975,8 +975,52 @@ export default function AgentCandidature() {
     titre: "Master 2 Finance d'Entreprise & Ingénierie Financière — INSEEC MSc Paris",
     ville: "Paris", email: "renaudmiko90@gmail.com", tel: "",
   });
-  const getUserKey = () => `cvProfile_${infos.email || "default"}`;
 
+  // Re-grouped state declarations to prevent Temporal Dead Zone (TDZ) ReferenceErrors
+  const [cvProfile, setCvProfile] = useState(null);
+  const [hasNewUpload, setHasNewUpload] = useState(false);
+  const [templateMode, setTemplateMode] = useState("auto"); // "auto" or "manual"
+  const [selectedTemplate, setSelectedTemplate] = useState("corporate");
+  const [openSection, setOpenSection] = useState("identite");
+  const [rewritingProfile, setRewritingProfile] = useState(false);
+  const [regenLettre, setRegenLettre] = useState(false);
+  const [atsScore, setAtsScore] = useState(0);
+  const [activeView, setActiveView] = useState("builder"); // "builder" or "dashboard"
+  const [candidatures, setCandidatures] = useState([]);
+  const [selectedCandidature, setSelectedCandidature] = useState(null);
+  const [activeDashboardTab, setActiveDashboardTab] = useState("documents"); // "documents", "tracker", "reminders"
+  const [newReminderText, setNewReminderText] = useState("");
+  const [newReminderDate, setNewReminderDate] = useState("");
+
+  const [optimisationCV, setOptimisationCV] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadMsg, setLoadMsg] = useState("");
+  const [loadPct, setLoadPct] = useState(0);
+  const [analyse, setAnalyse] = useState(null);
+  const [lettre, setLettre] = useState("");
+  const [objetLettre, setObjetLettre] = useState("");
+  const [atsSuggestions, setAtsSuggestions] = useState(null);
+  const [loadingAtsSuggestions, setLoadingAtsSuggestions] = useState(false);
+  const [cvAdapt, setCvAdapt] = useState("");
+  const [activeTab, setActiveTab] = useState("lettre");
+
+  // Gmail states
+  const [gmailAuthenticated, setGmailAuthenticated] = useState(false);
+  const [gmailEmail, setGmailEmail] = useState("");
+  const [gmailSyncing, setGmailSyncing] = useState(false);
+  const [gmailEmails, setGmailEmails] = useState([]);
+  const [showGmailPanel, setShowGmailPanel] = useState(false);
+  const [gmailError, setGmailError] = useState("");
+  const [gmailMessage, setGmailMessage] = useState("");
+
+  // Gmail config states
+  const [showGmailConfig, setShowGmailConfig] = useState(false);
+  const [configEmail, setConfigEmail] = useState("");
+  const [configAppPassword, setConfigAppPassword] = useState("");
+  const [configMessage, setConfigMessage] = useState("");
+  const [configError, setConfigError] = useState("");
+
+  const getUserKey = () => `cvProfile_${infos.email || "default"}`;
   const loadedEmailRef = useRef(infos.email);
 
   // Load profile from localStorage when email changes or on mount
@@ -996,25 +1040,7 @@ export default function AgentCandidature() {
     loadedEmailRef.current = infos.email;
   }, [infos.email]);
 
-  // Custom templates and styles
-  const [templateMode, setTemplateMode] = useState("auto"); // "auto" or "manual"
-  const [selectedTemplate, setSelectedTemplate] = useState("corporate");
-  const [openSection, setOpenSection] = useState("identite");
-  const [rewritingProfile, setRewritingProfile] = useState(false);
-  const [regenLettre, setRegenLettre] = useState(false);
-  const [atsScore, setAtsScore] = useState(0);
-
-  const [cvProfile, setCvProfile] = useState(null);
-  const [hasNewUpload, setHasNewUpload] = useState(false);
-
-  const [activeView, setActiveView] = useState("builder"); // "builder" or "dashboard"
-  const [candidatures, setCandidatures] = useState([]);
-  const [selectedCandidature, setSelectedCandidature] = useState(null);
-  const [activeDashboardTab, setActiveDashboardTab] = useState("documents"); // "documents", "tracker", "reminders"
-
-  // Custom reminder states
-  const [newReminderText, setNewReminderText] = useState("");
-  const [newReminderDate, setNewReminderDate] = useState("");
+  // (Moved to top)
 
   const getCandidaturesKey = () => `candidatures_${infos.email || "default"}`;
 
@@ -1071,33 +1097,7 @@ export default function AgentCandidature() {
       localStorage.setItem(getUserKey(), JSON.stringify(cvProfile));
     }
   }, [cvProfile, infos.email]);
-  const [optimisationCV, setOptimisationCV] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loadMsg, setLoadMsg] = useState("");
-  const [loadPct, setLoadPct] = useState(0);
-  const [analyse, setAnalyse] = useState(null);
-  const [lettre, setLettre] = useState("");
-  const [objetLettre, setObjetLettre] = useState("");
-  const [atsSuggestions, setAtsSuggestions] = useState(null);
-  const [loadingAtsSuggestions, setLoadingAtsSuggestions] = useState(false);
-  const [cvAdapt, setCvAdapt] = useState("");
-  const [activeTab, setActiveTab] = useState("lettre");
-
-  // Gmail states
-  const [gmailAuthenticated, setGmailAuthenticated] = useState(false);
-  const [gmailEmail, setGmailEmail] = useState("");
-  const [gmailSyncing, setGmailSyncing] = useState(false);
-  const [gmailEmails, setGmailEmails] = useState([]);
-  const [showGmailPanel, setShowGmailPanel] = useState(false);
-  const [gmailError, setGmailError] = useState("");
-  const [gmailMessage, setGmailMessage] = useState("");
-
-  // Gmail config states
-  const [showGmailConfig, setShowGmailConfig] = useState(false);
-  const [configEmail, setConfigEmail] = useState("");
-  const [configAppPassword, setConfigAppPassword] = useState("");
-  const [configMessage, setConfigMessage] = useState("");
-  const [configError, setConfigError] = useState("");
+  // (Moved to top)
 
   const checkGmailAuthStatus = async () => {
     try {
