@@ -130,7 +130,7 @@ const StepBar = ({ current }) => (
 
 // ── Backend IA API ─────────────────────────────────────────────────────────────
 async function callClaude(system, user) {
-  const res = await fetch("http://localhost:3001/api/claude", {
+  const res = await fetch("/api/claude", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ system, user }),
@@ -1101,7 +1101,7 @@ export default function AgentCandidature() {
 
   const checkGmailAuthStatus = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/gmail/status");
+      const res = await fetch("/api/gmail/status");
       const data = await res.json();
       setGmailAuthenticated(!!data.authenticated);
       setGmailEmail(data.email || "");
@@ -1119,7 +1119,7 @@ export default function AgentCandidature() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:3001/api/gmail/config", {
+      const res = await fetch("/api/gmail/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: configEmail, appPassword: configAppPassword }),
@@ -1144,7 +1144,7 @@ export default function AgentCandidature() {
   const disconnectGmail = async () => {
     if (!window.confirm("Déconnecter votre compte de messagerie de l'application ?")) return;
     try {
-      const res = await fetch("http://localhost:3001/api/gmail/disconnect", { method: "POST" });
+      const res = await fetch("/api/gmail/disconnect", { method: "POST" });
       const data = await res.json();
       if (data.success) {
         setGmailAuthenticated(false);
@@ -1162,7 +1162,7 @@ export default function AgentCandidature() {
     setGmailError("");
     setGmailMessage("Synchronisation en cours, analyse IA de vos emails...");
     try {
-      const res = await fetch("http://localhost:3001/api/gmail/sync?max=15");
+      const res = await fetch("/api/gmail/sync?max=15");
       if (res.status === 401) {
         setGmailAuthenticated(false);
         const errData = await res.json().catch(() => ({}));

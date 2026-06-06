@@ -4,8 +4,13 @@ import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { parseEmailsWithAI } from "./gmail.js";
 import * as imapService from "./imapService.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -148,6 +153,14 @@ app.post("/api/gmail/disconnect", (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Serve frontend static build files in production
+app.use(express.static(path.join(__dirname, "dist")));
+
+// Fallback all non-API GET requests to React index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
 app.listen(process.env.PORT || 3001, () => {
