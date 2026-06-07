@@ -70,106 +70,113 @@ export default function AuthModal({ onAuthSuccess, onCancel }) {
   };
 
   return (
-    <div style={styles.overlay}>
-      <div style={styles.container}>
-        <div style={styles.logo}>
-          <span style={styles.logoIcon}>⚡</span>
-          <div>
-            <div style={styles.logoTitle}>MIKA</div>
-            <div style={styles.logoSubtitle}>MY INTELLIGENT KAREER ASSISTANT</div>
-          </div>
+    <div className="fixed inset-0 bg-[#06050C]/80 backdrop-blur-md z-[10000] flex items-center justify-center font-sans">
+      <div className="bg-[#120E26]/85 border border-purple-500/20 rounded-2xl w-full max-w-4xl mx-4 shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_40px_rgba(112,38,232,0.08)] text-slate-50 flex overflow-hidden">
+
+        {/* Left Side: Image */}
+        <div className="hidden md:block md:w-1/2 relative bg-white flex items-center justify-center">
+          <img
+            src="/login-avatar.jpeg"
+            alt="Login Avatar"
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        <h2 style={styles.title}>{isSignUp ? "Créer un compte" : "Connexion Portail"}</h2>
-        <p style={styles.subtitle}>
-          {isSignUp
-            ? "Rejoins MIKA pour propulser tes candidatures."
-            : "Connecte-toi pour accéder à ton studio et CRM."}
-        </p>
-
-        {errorMsg && <div style={styles.errorAlert}>⚠️ {errorMsg}</div>}
-        {successMsg && <div style={styles.successAlert}>✅ {successMsg}</div>}
-
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Adresse Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="marie.laurent@example.com"
-              style={styles.input}
-              required
-            />
+        {/* Right Side: Login Form */}
+        <div className="w-full md:w-1/2 p-8 md:p-10 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-7">
+            <span className="w-9 h-9 bg-gradient-to-br from-[#7026E8] to-[#A855F7] rounded-lg flex items-center justify-center text-lg font-bold">⚡</span>
+            <div>
+              <div className="font-['Orbitron'] font-extrabold text-xl tracking-wider">MIKA</div>
+              <div className="text-[7.5px] text-[#00F0FF] tracking-[2.5px]">MY INTELLIGENT KAREER ASSISTANT</div>
+            </div>
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Mot de passe</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              style={styles.input}
-              required
-            />
-          </div>
+          <h2 className="text-2xl font-bold mb-2">{isSignUp ? "Créer un compte" : "Connexion Portail"}</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            {isSignUp
+              ? "Rejoins MIKA pour propulser tes candidatures."
+              : "Connecte-toi pour accéder à ton studio et CRM."}
+          </p>
 
-          <button type="submit" disabled={loading} style={styles.submitBtn}>
-            {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
-          </button>
-        </form>
+          {errorMsg && <div className="bg-rose-500/10 border border-rose-500/25 text-[#FF4A70] px-4 py-3 rounded-lg text-sm mb-4">⚠️ {errorMsg}</div>}
+          {successMsg && <div className="bg-emerald-500/10 border border-emerald-500/25 text-[#00E699] px-4 py-3 rounded-lg text-sm mb-4">✅ {successMsg}</div>}
 
-        <div style={styles.toggleText}>
-          {isSignUp ? "Déjà membre ?" : "Nouveau sur MIKA ?"}{" "}
-          <span
-            onClick={() => setIsSignUp(!isSignUp)}
-            style={styles.toggleLink}
-          >
-            {isSignUp ? "Se connecter" : "Créer un compte"}
-          </span>
-        </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-slate-400 font-medium">Adresse Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="marie.laurent@example.com"
+                className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-purple-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-purple-500/50 transition-colors"
+                required
+              />
+            </div>
 
-        {onCancel && (
-          <div style={{ ...styles.toggleText, marginTop: "14px" }}>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-slate-400 font-medium">Mot de passe</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-purple-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-purple-500/50 transition-colors"
+                required
+              />
+            </div>
+
+            <button type="submit" disabled={loading} className="mt-2 p-3 bg-gradient-to-r from-[#7026E8] to-[#A855F7] rounded-lg text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+              {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
+            </button>
+          </form>
+
+          <div className="text-center text-xs text-slate-400 mt-4">
+            {isSignUp ? "Déjà membre ?" : "Nouveau sur MIKA ?"}{" "}
             <span
-              onClick={onCancel}
-              style={{
-                color: "#94A3B8",
-                cursor: "pointer",
-                fontSize: "12px",
-                textDecoration: "underline",
-                transition: "color 0.2s"
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.color = "#00F0FF"}
-              onMouseLeave={(e) => e.currentTarget.style.color = "#94A3B8"}
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-[#00F0FF] font-semibold cursor-pointer hover:underline"
             >
-              Retour à l'accueil
+              {isSignUp ? "Se connecter" : "Créer un compte"}
             </span>
           </div>
-        )}
 
-        {/* Demo Mode / Bypass Section */}
-        {isLocal && (
-          <div style={styles.bypassSection}>
-            <div style={styles.bypassDivider}>
-              <span style={styles.bypassDividerText}>Accès Développeur / Démo</span>
+          {onCancel && (
+            <div className="text-center text-xs mt-3">
+              <span
+                onClick={onCancel}
+                className="text-slate-400 cursor-pointer underline hover:text-[#00F0FF] transition-colors"
+              >
+                Retour à l'accueil
+              </span>
             </div>
-            <div style={styles.bypassActions}>
-              <button onClick={() => handleBypass("admin")} style={styles.bypassBtnAdmin}>
-                ⚡ Connexion Admin (Renaud Miko)
-              </button>
-              <button onClick={() => handleBypass("candidate")} style={styles.bypassBtnCandidate}>
-                👤 Connexion Candidat Standard
-              </button>
-            </div>
-            {!isSupabaseConfigured && (
-              <div style={styles.infoText}>
-                ℹ️ Supabase n'est pas encore configuré dans `.env`. Utilise le mode Démo pour tester l'application.
+          )}
+
+          {/* Demo Mode / Bypass Section */}
+          {isLocal && (
+            <div className="mt-6 flex flex-col gap-2.5">
+              <div className="flex items-center text-center text-[10px] text-slate-400/40 uppercase tracking-widest mb-1">
+                <span className="flex-1 h-px bg-slate-400/10"></span>
+                <span className="px-3">Accès Développeur / Démo</span>
+                <span className="flex-1 h-px bg-slate-400/10"></span>
               </div>
-            )}
-          </div>
-        )}
+              <div className="flex flex-col gap-2">
+                <button onClick={() => handleBypass("admin")} className="p-2.5 bg-cyan-400/10 border border-cyan-400/30 rounded-lg text-[#00F0FF] text-xs font-semibold hover:bg-cyan-400/20 transition-colors">
+                  ⚡ Connexion Admin (Renaud Miko)
+                </button>
+                <button onClick={() => handleBypass("candidate")} className="p-2.5 bg-slate-400/10 border border-slate-400/20 rounded-lg text-slate-400 text-xs font-semibold hover:bg-slate-400/20 transition-colors">
+                  👤 Connexion Candidat Standard
+                </button>
+              </div>
+              {!isSupabaseConfigured && (
+                <div className="text-[10px] text-purple-500/50 text-center mt-1 leading-tight">
+                  ℹ️ Supabase n'est pas encore configuré dans `.env`. Utilise le mode Démo pour tester l'application.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

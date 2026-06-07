@@ -27,7 +27,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
       <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-20 min-h-screen flex flex-col justify-between">
         
         {/* ── Navigation Header ── */}
-        <header className="flex items-center justify-between py-6 md:py-8 border-b border-gray-100/50">
+        <header className="flex items-center justify-between py-6 md:py-8 border-b border-gray-100/50 bg-blue-900 rounded-lg px-4 shadow-md">
           
           {/* Logo */}
           <div 
