@@ -58,6 +58,52 @@ app.post("/api/claude", async (req, res) => {
   }
 });
 
+// ── Gemini Chatbot Endpoint ──────────────────────────────────────────────
+app.post("/api/chatbot", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY manquante dans .env",
+      });
+    }
+
+    if (!prompt) {
+      return res.status(400).json({
+        error: "Le prompt est requis",
+      });
+    }
+
+    const systemInstruction = `Tu es MIKA (My Intelligent Kareer Assistant), un assistant virtuel conçu pour guider les utilisateurs dans l'utilisation de cette application.
+Ton rôle est d'expliquer comment utiliser le site et ses fonctionnalités.
+Voici des détails sur le fonctionnement de l'application :
+1. "Optimiseur & Studio" (onglet n°1) : Permet de charger un CV (.pdf, .docx, .txt), de saisir une offre d'emploi, et de configurer des informations personnelles. En cliquant sur "Lancer l'agent", l'IA analyse le profil, calcule un score ATS en temps réel, extrait les mots-clés manquants, et génère un CV optimisé et une lettre de motivation premium prête à envoyer.
+2. "Mon CRM" (onglet n°2) : Un tableau de bord Kanban interactif pour suivre le statut de ses candidatures (Brouillon, Envoyée, Entretien, Offre, Refusée). On peut y glisser-déposer des cartes de candidatures.
+3. "Sync Gmail" (onglet n°3) : Permet de connecter sa boîte de messagerie en renseignant son e-mail et un Mot de passe d'application Google (à 16 caractères). L'application récupère automatiquement les e-mails de candidatures étiquetés pour les importer en 1 clic dans le CRM.
+4. "Barre de recherche" (spotlight) : Accessible en haut à droite (icône loupe) pour filtrer et rechercher des candidatures par poste ou entreprise dans le CRM.
+
+IMPORTANT : Tu ne dois répondre qu'à des questions sur l'utilisation pratique du site (comment postuler, comment importer un mail, comment générer sa lettre, etc.). Ne réponds jamais à des questions techniques sur le code source, la construction du site ou la programmation. Reste courtois, précis, synthétique et professionnel. Parle toujours en français.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: prompt,
+      config: {
+        systemInstruction: systemInstruction,
+        maxOutputTokens: 1000,
+        temperature: 0.7,
+      },
+    });
+
+    res.json({ text: response.text });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: error.message || "Erreur serveur Gemini",
+    });
+  }
+});
+
 // ── IMAP Integration Endpoints ───────────────────────────────────────────────
 
 // Check if IMAP is configured/authenticated

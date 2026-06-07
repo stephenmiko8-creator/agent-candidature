@@ -1,50 +1,149 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  CV_TEMPLATES,
+  LETTER_TEMPLATES
+} from "./templates/Templates";
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const css = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Sora:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Orbitron:wght@300;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+
+  .font-override-Inter * { font-family: 'Inter', sans-serif !important; }
+  .font-override-Poppins * { font-family: 'Poppins', sans-serif !important; }
+  .font-override-Lora * { font-family: 'Lora', Georgia, serif !important; }
+  .font-override-Playfair * { font-family: 'Playfair Display', Georgia, serif !important; }
+  .font-override-Outfit * { font-family: 'Outfit', sans-serif !important; }
+  .font-override-Roboto * { font-family: 'Roboto', sans-serif !important; }
+  .font-override-FiraCode * { font-family: 'Fira Code', 'Share Tech Mono', monospace !important; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0C0F1A; color: #E8EAF0; font-family: 'Sora', sans-serif; }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #0C0F1A; }
-  ::-webkit-scrollbar-thumb { background: #252A42; border-radius: 2px; }
-  textarea, input, select { font-family: 'Sora', sans-serif; }
+  body { 
+    background: #06050C url('/bg-cosmic.png') no-repeat center center fixed; 
+    background-size: cover; 
+    color: #F8FAFC; 
+    font-family: 'Inter', sans-serif; 
+    min-height: 100vh;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.35); border-radius: 3px; }
+  textarea, input, select { font-family: 'Inter', sans-serif; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   @keyframes slideIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
   @keyframes spin { to{transform:rotate(360deg)} }
   .slide { animation: slideIn 0.35s ease; }
   .pulse { animation: pulse 2s infinite; }
 
+  /* Glassmorphism helpers */
+  .glass-panel {
+    background: rgba(13, 11, 28, 0.72);
+    border: 1px solid rgba(168, 85, 247, 0.18);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .glass-card {
+    background: rgba(18, 14, 38, 0.80);
+    border: 1px solid rgba(168, 85, 247, 0.14);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  /* Responsive layouts */
+  .builder-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr 340px;
+    gap: 18px;
+  }
+  @media (max-width: 1024px) {
+    .builder-grid {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
   /* Kanban styles */
-  .k-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 15px; align-items: start; }
-  .k-column { background: #111422; border: 1px solid #1E2440; border-radius: 12px; padding: 12px; min-height: 520px; display: flex; flex-direction: column; gap: 10px; }
-  .k-column-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; border-bottom: 2px solid #1E2440; margin-bottom: 6px; }
-  .k-column-title { font-weight: 700; font-size: 11px; color: #6B7494; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; }
-  .k-card { background: #161B2E; border: 1px solid #1E2440; border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s ease; position: relative; text-align: left; }
-  .k-card:hover { border-color: #4F8EF7; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(79, 142, 247, 0.15); }
-  .k-card-title { font-weight: 700; font-size: 13px; color: #E8EAF0; margin-bottom: 2px; }
-  .k-card-subtitle { font-size: 11px; color: #6B7494; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .k-card-footer { display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; color: #6B7494; font-family: 'DM Mono', monospace; border-top: 1px solid #1E2440; padding-top: 8px; margin-top: 8px; }
+  .k-board { 
+    display: grid; 
+    grid-template-columns: repeat(5, minmax(280px, 1fr)); 
+    gap: 14px; 
+    margin-top: 15px; 
+    align-items: start; 
+    overflow-x: auto; 
+    padding-bottom: 15px; 
+  }
+  .k-column { 
+    background: rgba(10, 8, 22, 0.88); 
+    border: 1px solid rgba(168, 85, 247, 0.18); 
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 12px; 
+    padding: 12px; 
+    min-height: 520px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+  }
+  .k-column-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; border-bottom: 2px solid rgba(168, 85, 247, 0.15); margin-bottom: 6px; }
+  .k-column-title { font-weight: 700; font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; }
+  .k-card { 
+    background: rgba(18, 14, 38, 0.82); 
+    border: 1px solid rgba(168, 85, 247, 0.12); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 10px; 
+    padding: 12px; 
+    cursor: pointer; 
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1); 
+    position: relative; 
+    text-align: left; 
+  }
+  .k-card:hover { 
+    border-color: #00F0FF; 
+    transform: translateY(-3px); 
+    box-shadow: 0 8px 24px rgba(0, 240, 255, 0.18); 
+  }
+  .k-card-title { font-weight: 700; font-size: 13px; color: #F8FAFC; margin-bottom: 2px; }
+  .k-card-subtitle { font-size: 11px; color: #94A3B8; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .k-card-footer { display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; color: #94A3B8; font-family: 'DM Mono', monospace; border-top: 1px solid rgba(168, 85, 247, 0.15); padding-top: 8px; margin-top: 8px; }
 
   /* Timeline */
   .timeline-container { display: flex; flex-direction: column; gap: 16px; position: relative; padding-left: 20px; text-align: left; }
-  .timeline-container::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 2px; background: #1E2440; }
+  .timeline-container::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 2px; background: rgba(168, 85, 247, 0.2); }
   .timeline-item { position: relative; display: flex; flex-direction: column; gap: 4px; }
-  .timeline-dot { position: absolute; left: -19px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #1E2440; border: 2px solid #111422; transition: all 0.2s; }
-  .timeline-dot.active { background: #4F8EF7; box-shadow: 0 0 6px #4F8EF7; }
-  .timeline-dot.done { background: #3DDC97; box-shadow: 0 0 6px #3DDC97; }
+  .timeline-dot { position: absolute; left: -19px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: rgba(168, 85, 247, 0.2); border: 2px solid #06050C; transition: all 0.2s; }
+  .timeline-dot.active { background: #00F0FF; box-shadow: 0 0 8px #00F0FF; }
+  .timeline-dot.done { background: #00E699; box-shadow: 0 0 8px #00E699; }
 
   /* Modal Overlay */
-  .m-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(12, 15, 26, 0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-  .m-content { background: #111422; border: 1px solid #1E2440; border-radius: 16px; width: 95%; max-width: 900px; height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); animation: slideIn 0.25s ease; }
+  .m-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(6, 5, 12, 0.78); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+  .m-content { 
+    background: rgba(13, 11, 28, 0.85); 
+    border: 1px solid rgba(168, 85, 247, 0.25); 
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 16px; 
+    width: 95%; 
+    max-width: 900px; 
+    height: 85vh; 
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+    animation: slideIn 0.25s ease; 
+  }
   `;
 
 const C = {
-  bg: "#0C0F1A", panel: "#111422", card: "#161B2E",
-  border: "#1E2440", accent: "#4F8EF7", red: "#E05252",
-  gold: "#F0B429", green: "#3DDC97", purple: "#9B7EF8",
-  text: "#E8EAF0", muted: "#6B7494", dim: "#2E3452",
+  bg: "transparent",
+  panel: "rgba(10, 8, 22, 0.88)",
+  card: "rgba(18, 14, 38, 0.80)",
+  border: "rgba(168, 85, 247, 0.16)",
+  accent: "#00F0FF",
+  red: "#FF4A70",
+  gold: "#FFB020",
+  green: "#00E699",
+  purple: "#A855F7",
+  text: "#F8FAFC",
+  muted: "#94A3B8",
+  dim: "rgba(168, 85, 247, 0.08)",
 };
 
 // ── UI Primitives ─────────────────────────────────────────────────────────────
@@ -70,31 +169,42 @@ const Btn = ({ children, onClick, color = C.accent, disabled, size = "md" }) => 
   }}>{children}</button>
 );
 
-const Label = ({ children, color = C.muted }) => (
-
+const Label = ({ children, color = "#E2E8F0" }) => (
   <div style={{
-    fontSize: 10, fontFamily: "'DM Mono',monospace", color,
-    letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8,
+    fontSize: 12,
+    fontFamily: "'Inter', sans-serif",
+    fontWeight: 500,
+    color,
+    letterSpacing: "0.02em",
+    marginBottom: 8,
   }}>{children}</div>
 );
 
 const Card = ({ children, style = {} }) => (
-
   <div style={{
     background: C.card, border: `1px solid ${C.border}`,
-    borderRadius: 12, padding: 20, ...style,
+    borderRadius: 12, padding: 20,
+    backdropFilter: "blur(18px)",
+    WebkitBackdropFilter: "blur(18px)",
+    ...style,
   }}>{children}</div>
 );
 
-const Section = ({ title, icon, children, accent = C.accent }) => (
-
+const Section = ({ title, icon, children }) => (
   <div style={{ marginBottom: 20 }}>
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
       marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${C.border}`,
     }}>
       <span style={{ fontSize: 15 }}>{icon}</span>
-      <span style={{ fontWeight: 700, fontSize: 13, color: accent }}>{title}</span>
+      <span style={{
+        fontFamily: "'Rajdhani', sans-serif",
+        fontWeight: 600,
+        fontSize: 17,
+        color: C.accent,
+        textTransform: "uppercase",
+        letterSpacing: "0.05em"
+      }}>{title}</span>
     </div>
     {children}
   </div>
@@ -106,27 +216,95 @@ const STEPS = [
   { id: 2, label: "Résultats", icon: "✅" },
 ];
 
-const StepBar = ({ current }) => (
+const StepBar = ({ current }) => {
+  const progressPercent = current === 0 ? 0 : current === 1 ? 50 : 100;
 
-  <div style={{ display: "flex", alignItems: "center", marginBottom: 28 }}>
-    {STEPS.map((s, i) => (
-      <div key={s.id} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : "none" }}>
+  return (
+    <div style={{ position: "relative", marginBottom: 36, padding: "0 10px" }}>
+      {/* Connecting Progress Track */}
+      <div style={{
+        position: "absolute",
+        top: 18,
+        left: 30,
+        right: 30,
+        height: 3,
+        background: "rgba(168, 85, 247, 0.15)",
+        borderRadius: 2,
+        zIndex: 1
+      }}>
         <div style={{
-          display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", borderRadius: 20,
-          background: current === s.id ? C.accent + "22" : current > s.id ? C.green + "15" : C.dim + "44",
-          border: `1px solid ${current === s.id ? C.accent + "66" : current > s.id ? C.green + "44" : C.border}`,
-        }}>
-          <span style={{ fontSize: 13 }}>{current > s.id ? "✓" : s.icon}</span>
-          <span style={{
-            fontSize: 11, fontWeight: 600, fontFamily: "'DM Mono',monospace",
-            color: current === s.id ? C.accent : current > s.id ? C.green : C.muted,
-          }}>{s.label}</span>
-        </div>
-        {i < STEPS.length - 1 && <div style={{ flex: 1, height: 1, background: current > i ? C.green + "66" : C.border, margin: "0 8px" }} />}
+          height: "100%",
+          width: `${progressPercent}%`,
+          background: `linear-gradient(90deg, ${C.accent}, ${current > 1 ? C.green : C.accent})`,
+          boxShadow: `0 0 8px ${C.accent}`,
+          transition: "width 0.4s ease-in-out",
+          borderRadius: 2
+        }} />
       </div>
-    ))}
-  </div>
-);
+
+      {/* Stepper Nodes */}
+      <div style={{ display: "flex", justifyContent: "space-between", position: "relative", zIndex: 2 }}>
+        {STEPS.map((s, idx) => {
+          const isActive = current === s.id;
+          const isCompleted = current > s.id;
+
+          let circleBg = "#0D0B1C";
+          let circleBorder = `2px solid rgba(168, 85, 247, 0.35)`;
+          let circleColor = C.muted;
+          let circleShadow = "none";
+
+          if (isActive) {
+            circleBorder = `2px solid ${C.accent}`;
+            circleColor = C.accent;
+            circleShadow = `0 0 12px ${C.accent}66`;
+          } else if (isCompleted) {
+            circleBorder = `2px solid ${C.green}`;
+            circleColor = C.green;
+            circleShadow = `0 0 12px ${C.green}66`;
+          }
+
+          return (
+            <div key={s.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 100 }}>
+              {/* Circular Node */}
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: circleBg,
+                border: circleBorder,
+                boxShadow: circleShadow,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 700,
+                color: circleColor,
+                fontFamily: "'Share Tech Mono', monospace",
+                transition: "all 0.3s ease-in-out"
+              }}>
+                {isCompleted ? "✓" : s.id + 1}
+              </div>
+
+              {/* Step Label */}
+              <div style={{
+                marginTop: 8,
+                fontSize: 11,
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: isActive ? 600 : 500,
+                color: isActive ? C.accent : isCompleted ? C.green : C.muted,
+                textAlign: "center",
+                whiteSpace: "nowrap",
+                letterSpacing: "0.03em"
+              }}>
+                {s.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 // ── Backend IA API ─────────────────────────────────────────────────────────────
 async function callClaude(system, user) {
@@ -343,7 +521,7 @@ RÈGLES OPTIMISATION CV & MODÈLE :
   * "creative" (pour les offres en marketing, communication, design, produit ou startup)
   * "tech" (pour les offres en informatique, développement, devops, data ou ingénierie)
 
-RÈGLES LETTRE DE MOTIVATION PREMIUM — VERSION ROTHSCHILD+ (STRICTEMENT APPLIQUÉES) :
+RÈGLES LETTRE DE MOTIVATION PREMIUM (STRICTEMENT APPLIQUÉES) :
 - La lettre doit être hautement personnalisée, naturelle, professionnelle et IMMÉDIATEMENT envoyable
 - Elle doit commencer exactement par "Madame, Monsieur,"
 - Elle doit se terminer exactement par "Je vous adresse mes sincères salutations,"
@@ -411,523 +589,19 @@ Fais en un seul appel : structure le CV, analyse l'offre (y compris recommandati
   return safeJsonParse(r);
 }
 
-function escapeHtml(str = "") {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+// Les modèles de CV et de lettres de motivation sont importés depuis ./templates/Templates.jsx;
 
-// ── Modèles de CV de Haute Qualité pour le visualiseur et l'impression ──────────────────────────────────────────
-
-const CorporateTemplate = ({ cv, infos }) => {
-  const identite = cv.identite || {};
-  return (
-    <div style={{
-      fontFamily: "'Sora', 'Inter', sans-serif",
-      color: "#1E293B",
-      background: "#FFFFFF",
-      padding: "32px",
-      minHeight: "297mm",
-      boxSizing: "border-box",
-      textAlign: "left",
-      fontSize: "12px",
-      lineHeight: "1.5"
-    }}>
-      {/* Header */}
-      <div style={{ borderBottom: "3px solid #1E3A8A", paddingBottom: "12px", marginBottom: "20px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: "700", color: "#1E3A8A", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          {infos.prenom} {infos.nom}
-        </h1>
-        <div style={{ fontSize: "13px", fontWeight: "600", color: "#475569", marginTop: "4px" }}>
-          {cv.titre || infos.titre}
-        </div>
-      </div>
-
-      {/* Grid Layout */}
-      <div style={{ display: "flex", gap: "25px" }}>
-        {/* Left Column */}
-        <div style={{ flex: "1" }}>
-          {/* Summary */}
-          {cv.profil && (
-            <div style={{ marginBottom: "20px" }}>
-              <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#1E3A8A", borderBottom: "1px solid #E2E8F0", paddingBottom: "4px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Profil Professionnel
-              </h2>
-              <p style={{ color: "#334155", fontSize: "11px", textAlign: "justify", lineHeight: "1.6" }}>{cv.profil}</p>
-            </div>
-          )}
-
-          {/* Experiences */}
-          <div style={{ marginBottom: "20px" }}>
-            <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#1E3A8A", borderBottom: "1px solid #E2E8F0", paddingBottom: "4px", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Expériences Professionnelles
-            </h2>
-            {(cv.experiences || []).map((exp, idx) => (
-              <div key={idx} style={{ marginBottom: "14px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#1E293B", fontSize: "11px" }}>
-                  <span>{exp.poste}</span>
-                  <span style={{ color: "#64748B", fontWeight: "500" }}>{exp.dates}</span>
-                </div>
-                <div style={{ color: "#1E3A8A", fontWeight: "600", fontSize: "11px", marginBottom: "4px" }}>
-                  {exp.entreprise} {exp.lieu ? `— ${exp.lieu}` : ""}
-                </div>
-                {exp.details && <p style={{ color: "#475569", fontSize: "10.5px", marginBottom: "4px", textAlign: "justify" }}>{exp.details}</p>}
-                {exp.bullets && exp.bullets.length > 0 && (
-                  <ul style={{ paddingLeft: "15px", margin: "0", color: "#334155", fontSize: "10.5px" }}>
-                    {exp.bullets.map((b, bIdx) => (
-                      <li key={bIdx} style={{ marginBottom: "2px" }}>{b}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Educations */}
-          <div>
-            <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#1E3A8A", borderBottom: "1px solid #E2E8F0", paddingBottom: "4px", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Formations
-            </h2>
-            {(cv.formations || []).map((f, idx) => (
-              <div key={idx} style={{ marginBottom: "10px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#1E293B", fontSize: "11px" }}>
-                  <span>{f.diplome}</span>
-                  <span style={{ color: "#64748B", fontWeight: "500" }}>{f.dates}</span>
-                </div>
-                <div style={{ color: "#475569", fontWeight: "600", fontSize: "11px" }}>
-                  {f.ecole} {f.lieu ? `— ${f.lieu}` : ""}
-                </div>
-                {f.details && <p style={{ color: "#64748B", fontSize: "10px", marginTop: "2px" }}>{f.details}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div style={{ width: "210px", flexShrink: "0" }}>
-          {/* Contact */}
-          <div style={{ marginBottom: "20px" }}>
-            <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#1E3A8A", borderBottom: "1px solid #E2E8F0", paddingBottom: "4px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Contact
-            </h2>
-            <div style={{ fontSize: "10.5px", color: "#334155", display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div>📧 {identite.email || infos.email}</div>
-              {(identite.telephone || infos.tel) && <div>📞 {identite.telephone || infos.tel}</div>}
-              {(identite.ville || infos.ville) && <div>📍 {identite.ville || infos.ville}</div>}
-              {identite.linkedin && <div style={{ wordBreak: "break-all" }}>🔗 {identite.linkedin.replace("https://www.", "")}</div>}
-            </div>
-          </div>
-
-          {/* Competences */}
-          <div style={{ marginBottom: "20px" }}>
-            <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#1E3A8A", borderBottom: "1px solid #E2E8F0", paddingBottom: "4px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Compétences
-            </h2>
-            {cv.competences?.finance && (
-              <div style={{ marginBottom: "10px" }}>
-                <div style={{ fontWeight: "700", fontSize: "9px", color: "#64748B", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "2px" }}>Expertises</div>
-                <div style={{ fontSize: "10.5px", color: "#334155" }}>{cv.competences.finance}</div>
-              </div>
-            )}
-            {cv.competences?.outils && (
-              <div style={{ marginBottom: "10px" }}>
-                <div style={{ fontWeight: "700", fontSize: "9px", color: "#64748B", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "2px" }}>Outils & Logiciels</div>
-                <div style={{ fontSize: "10.5px", color: "#334155" }}>{cv.competences.outils}</div>
-              </div>
-            )}
-          </div>
-
-          {/* Langues */}
-          {cv.competences?.langues && (
-            <div style={{ marginBottom: "20px" }}>
-              <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#1E3A8A", borderBottom: "1px solid #E2E8F0", paddingBottom: "4px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Langues
-              </h2>
-              <div style={{ fontSize: "10.5px", color: "#334155" }}>{cv.competences.langues}</div>
-            </div>
-          )}
-
-          {/* Interets */}
-          {cv.competences?.interets && (
-            <div>
-              <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#1E3A8A", borderBottom: "1px solid #E2E8F0", paddingBottom: "4px", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Centres d'intérêt
-              </h2>
-              <div style={{ fontSize: "10.5px", color: "#334155" }}>{cv.competences.interets}</div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const MinimalistTemplate = ({ cv, infos }) => {
-  const identite = cv.identite || {};
-  return (
-    <div style={{
-      fontFamily: "'Lora', 'Georgia', serif",
-      color: "#111827",
-      background: "#FFFFFF",
-      padding: "36px",
-      minHeight: "297mm",
-      boxSizing: "border-box",
-      textAlign: "center",
-      fontSize: "12px",
-      lineHeight: "1.6"
-    }}>
-      {/* Header */}
-      <div style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontSize: "26px", fontWeight: "500", color: "#111827", letterSpacing: "1px", marginBottom: "4px" }}>
-          {infos.prenom} {infos.nom}
-        </h1>
-        <div style={{ fontSize: "12px", fontWeight: "600", color: "#E05252", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", fontFamily: "'Sora', sans-serif" }}>
-          {cv.titre || infos.titre}
-        </div>
-        <div style={{ fontSize: "10.5px", color: "#4B5563", fontFamily: "'Sora', sans-serif", display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
-          <span>{identite.email || infos.email}</span>
-          {(identite.telephone || infos.tel) && <span>• {identite.telephone || infos.tel}</span>}
-          {(identite.ville || infos.ville) && <span>• {identite.ville || infos.ville}</span>}
-          {identite.linkedin && <span>• {identite.linkedin.replace("https://www.", "")}</span>}
-        </div>
-      </div>
-
-      <hr style={{ border: "none", borderTop: "1px solid #D1D5DB", margin: "16px 0" }} />
-
-      <div style={{ textAlign: "left", fontFamily: "'Lora', serif" }}>
-        {/* Profile */}
-        {cv.profil && (
-          <div style={{ marginBottom: "22px" }}>
-            <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#111827", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", fontFamily: "'Sora', sans-serif" }}>
-              Profil
-            </h2>
-            <p style={{ color: "#374151", fontSize: "11px", textAlign: "justify", lineHeight: "1.6" }}>{cv.profil}</p>
-          </div>
-        )}
-
-        {/* Experiences */}
-        <div style={{ marginBottom: "22px" }}>
-          <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#111827", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "10px", fontFamily: "'Sora', sans-serif" }}>
-            Parcours Professionnel
-          </h2>
-          {(cv.experiences || []).map((exp, idx) => (
-            <div key={idx} style={{ marginBottom: "14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#111827", fontSize: "11.5px" }}>
-                <span>{exp.poste} — <span style={{ fontWeight: "500", color: "#4B5563", fontStyle: "italic" }}>{exp.entreprise}</span></span>
-                <span style={{ color: "#6B7280", fontWeight: "500", fontSize: "10.5px", fontFamily: "'Sora', sans-serif" }}>{exp.dates}</span>
-              </div>
-              {exp.lieu && <div style={{ fontSize: "10px", color: "#9CA3AF", fontStyle: "italic", marginBottom: "4px" }}>{exp.lieu}</div>}
-              {exp.details && <p style={{ color: "#4B5563", fontSize: "10.5px", marginBottom: "4px", textAlign: "justify" }}>{exp.details}</p>}
-              {exp.bullets && exp.bullets.length > 0 && (
-                <ul style={{ paddingLeft: "15px", margin: "0", color: "#374151", fontSize: "10.5px" }}>
-                  {exp.bullets.map((b, bIdx) => (
-                    <li key={bIdx} style={{ marginBottom: "2px" }}>{b}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Educations */}
-        <div style={{ marginBottom: "22px" }}>
-          <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#111827", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "10px", fontFamily: "'Sora', sans-serif" }}>
-            Formation
-          </h2>
-          {(cv.formations || []).map((f, idx) => (
-            <div key={idx} style={{ marginBottom: "8px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#111827", fontSize: "11.5px" }}>
-                <span>{f.diplome} — <span style={{ fontWeight: "500", color: "#4B5563", fontStyle: "italic" }}>{f.ecole}</span></span>
-                <span style={{ color: "#6B7280", fontWeight: "500", fontFamily: "'Sora', sans-serif" }}>{f.dates}</span>
-              </div>
-              {f.details && <p style={{ color: "#6B7280", fontSize: "10px", marginTop: "2px" }}>{f.details}</p>}
-            </div>
-          ))}
-        </div>
-
-        {/* Skills */}
-        <div>
-          <h2 style={{ fontSize: "11px", fontWeight: "700", color: "#111827", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "10px", fontFamily: "'Sora', sans-serif" }}>
-            Compétences & Informations
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", fontSize: "11px", color: "#374151" }}>
-            <div>
-              {cv.competences?.finance && <div style={{ marginBottom: "6px" }}><strong>Spécialités :</strong> {cv.competences.finance}</div>}
-              {cv.competences?.outils && <div><strong>Outils :</strong> {cv.competences.outils}</div>}
-            </div>
-            <div>
-              {cv.competences?.langues && <div style={{ marginBottom: "6px" }}><strong>Langues :</strong> {cv.competences.langues}</div>}
-              {cv.competences?.interets && <div><strong>Intérêts :</strong> {cv.competences.interets}</div>}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const CreativeTemplate = ({ cv, infos }) => {
-  const identite = cv.identite || {};
-  return (
-    <div style={{
-      fontFamily: "'Sora', sans-serif",
-      color: "#1E293B",
-      background: "#FFFFFF",
-      minHeight: "297mm",
-      display: "flex",
-      boxSizing: "border-box",
-      textAlign: "left"
-    }}>
-      {/* Left Sidebar */}
-      <div style={{
-        width: "220px",
-        background: "#F1F5F9",
-        borderRight: "1px solid #E2E8F0",
-        padding: "32px 20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "24px",
-        flexShrink: "0"
-      }}>
-        {/* Name Title */}
-        <div>
-          <h1 style={{ fontSize: "21px", fontWeight: "700", color: "#4F8EF7", lineHeight: "1.2" }}>
-            {infos.prenom}<br />{infos.nom}
-          </h1>
-          <div style={{ fontSize: "11px", fontWeight: "600", color: "#64748B", marginTop: "8px", lineHeight: "1.3" }}>
-            {cv.titre || infos.titre}
-          </div>
-        </div>
-
-        {/* Contact */}
-        <div>
-          <h3 style={{ fontSize: "10px", fontWeight: "700", color: "#1E293B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", borderBottom: "2px solid #4F8EF7", paddingBottom: "3px" }}>
-            Contact
-          </h3>
-          <div style={{ fontSize: "10px", color: "#475569", display: "flex", flexDirection: "column", gap: "6px", wordBreak: "break-all" }}>
-            <div>✉️ {identite.email || infos.email}</div>
-            {(identite.telephone || infos.tel) && <div>📞 {identite.telephone || infos.tel}</div>}
-            {(identite.ville || infos.ville) && <div>📍 {identite.ville || infos.ville}</div>}
-            {identite.linkedin && <div>🔗 {identite.linkedin.replace("https://www.", "")}</div>}
-          </div>
-        </div>
-
-        {/* Competences */}
-        <div>
-          <h3 style={{ fontSize: "10px", fontWeight: "700", color: "#1E293B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", borderBottom: "2px solid #4F8EF7", paddingBottom: "3px" }}>
-            Compétences
-          </h3>
-          {cv.competences?.finance && (
-            <div style={{ marginBottom: "10px" }}>
-              <div style={{ fontWeight: "700", fontSize: "9px", color: "#64748B", textTransform: "uppercase", marginBottom: "2px" }}>Expertises</div>
-              <div style={{ fontSize: "10px", color: "#475569" }}>{cv.competences.finance}</div>
-            </div>
-          )}
-          {cv.competences?.outils && (
-            <div>
-              <div style={{ fontWeight: "700", fontSize: "9px", color: "#64748B", textTransform: "uppercase", marginBottom: "2px" }}>Outils & Systèmes</div>
-              <div style={{ fontSize: "10px", color: "#475569" }}>{cv.competences.outils}</div>
-            </div>
-          )}
-        </div>
-
-        {/* Langues */}
-        {cv.competences?.langues && (
-          <div>
-            <h3 style={{ fontSize: "10px", fontWeight: "700", color: "#1E293B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", borderBottom: "2px solid #4F8EF7", paddingBottom: "3px" }}>
-              Langues
-            </h3>
-            <div style={{ fontSize: "10px", color: "#475569" }}>{cv.competences.langues}</div>
-          </div>
-        )}
-
-        {/* Interets */}
-        {cv.competences?.interets && (
-          <div>
-            <h3 style={{ fontSize: "10px", fontWeight: "700", color: "#1E293B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", borderBottom: "2px solid #4F8EF7", paddingBottom: "3px" }}>
-              Intérêts
-            </h3>
-            <div style={{ fontSize: "10px", color: "#475569" }}>{cv.competences.interets}</div>
-          </div>
-        )}
-      </div>
-
-      {/* Main Body */}
-      <div style={{ flex: "1", padding: "32px 28px" }}>
-        {/* Profile */}
-        {cv.profil && (
-          <div style={{ marginBottom: "24px" }}>
-            <h2 style={{ fontSize: "12px", fontWeight: "700", color: "#1E293B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", borderLeft: "4px solid #4F8EF7", paddingLeft: "8px" }}>
-              À propos de moi
-            </h2>
-            <p style={{ color: "#475569", fontSize: "11px", textAlign: "justify", lineHeight: "1.5" }}>{cv.profil}</p>
-          </div>
-        )}
-
-        {/* Experiences */}
-        <div style={{ marginBottom: "24px" }}>
-          <h2 style={{ fontSize: "12px", fontWeight: "700", color: "#1E293B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px", borderLeft: "4px solid #4F8EF7", paddingLeft: "8px" }}>
-            Expériences
-          </h2>
-          {(cv.experiences || []).map((exp, idx) => (
-            <div key={idx} style={{ marginBottom: "14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#1E293B", fontSize: "11px" }}>
-                <span>{exp.poste}</span>
-                <span style={{ color: "#4F8EF7", fontSize: "10.5px", fontWeight: "600" }}>{exp.dates}</span>
-              </div>
-              <div style={{ color: "#64748B", fontWeight: "600", fontSize: "10.5px", marginBottom: "4px" }}>
-                {exp.entreprise} {exp.lieu ? `— ${exp.lieu}` : ""}
-              </div>
-              {exp.details && <p style={{ color: "#475569", fontSize: "10.5px", marginBottom: "4px" }}>{exp.details}</p>}
-              {exp.bullets && exp.bullets.length > 0 && (
-                <ul style={{ paddingLeft: "15px", margin: "0", color: "#475569", fontSize: "10.5px" }}>
-                  {exp.bullets.map((b, bIdx) => (
-                    <li key={bIdx} style={{ marginBottom: "2px" }}>{b}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Educations */}
-        <div>
-          <h2 style={{ fontSize: "12px", fontWeight: "700", color: "#1E293B", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px", borderLeft: "4px solid #4F8EF7", paddingLeft: "8px" }}>
-            Formation
-          </h2>
-          {(cv.formations || []).map((f, idx) => (
-            <div key={idx} style={{ marginBottom: "10px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#1E293B", fontSize: "11px" }}>
-                <span>{f.diplome}</span>
-                <span style={{ color: "#4F8EF7", fontSize: "10.5px", fontWeight: "600" }}>{f.dates}</span>
-              </div>
-              <div style={{ color: "#64748B", fontWeight: "600", fontSize: "10.5px", marginTop: "2px" }}>
-                {f.ecole} {f.lieu ? `— ${f.lieu}` : ""}
-              </div>
-              {f.details && <p style={{ color: "#64748B", fontSize: "10px", marginTop: "2px" }}>{f.details}</p>}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const TechTemplate = ({ cv, infos }) => {
-  const identite = cv.identite || {};
-  return (
-    <div style={{
-      fontFamily: "'Sora', sans-serif",
-      color: "#0F172A",
-      background: "#FFFFFF",
-      padding: "32px",
-      minHeight: "297mm",
-      boxSizing: "border-box",
-      textAlign: "left",
-      fontSize: "11.5px",
-      lineHeight: "1.5"
-    }}>
-      {/* Header Banner */}
-      <div style={{ border: "2px solid #0D9488", padding: "16px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h1 style={{ fontSize: "22px", fontWeight: "700", color: "#0F172A", letterSpacing: "-0.5px" }}>
-            {infos.prenom} {infos.nom}
-          </h1>
-          <div style={{ fontSize: "11.5px", fontWeight: "600", color: "#0D9488", fontFamily: "'DM Mono', monospace", marginTop: "4px" }}>
-            &gt; {cv.titre || infos.titre}
-          </div>
-        </div>
-        <div style={{ fontSize: "10px", color: "#475569", fontFamily: "'DM Mono', monospace", textAlign: "right", display: "flex", flexDirection: "column", gap: "4px" }}>
-          <div>[email] {identite.email || infos.email}</div>
-          {(identite.telephone || infos.tel) && <div>[phone] {identite.telephone || infos.tel}</div>}
-          {(identite.ville || infos.ville) && <div>[loc] {identite.ville || infos.ville}</div>}
-          {identite.linkedin && <div>[ln] {identite.linkedin.replace("https://www.", "")}</div>}
-        </div>
-      </div>
-
-      {/* Profile */}
-      {cv.profil && (
-        <div style={{ marginBottom: "18px", border: "1px solid #E2E8F0", padding: "14px" }}>
-          <div style={{ fontSize: "10px", fontWeight: "700", color: "#0D9488", fontFamily: "'DM Mono', monospace", marginBottom: "6px", textTransform: "uppercase" }}>
-            // PROFILE SUMMARY
-          </div>
-          <p style={{ color: "#334155", fontSize: "10.5px", textAlign: "justify", lineHeight: "1.6" }}>{cv.profil}</p>
-        </div>
-      )}
-
-      {/* Experiences */}
-      <div style={{ marginBottom: "18px" }}>
-        <div style={{ fontSize: "11px", fontWeight: "700", color: "#0F172A", borderBottom: "2px solid #0F172A", paddingBottom: "4px", marginBottom: "12px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase" }}>
-          # WORK EXPERIENCE
-        </div>
-        {(cv.experiences || []).map((exp, idx) => (
-          <div key={idx} style={{ marginBottom: "14px", borderLeft: "2px solid #E2E8F0", paddingLeft: "14px", marginLeft: "4px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#0F172A", fontSize: "11px" }}>
-              <span>{exp.poste} <span style={{ color: "#0D9488" }}>@ {exp.entreprise}</span></span>
-              <span style={{ color: "#64748B", fontWeight: "500", fontFamily: "'DM Mono', monospace", fontSize: "10.5px" }}>{exp.dates}</span>
-            </div>
-            {exp.lieu && <div style={{ fontSize: "9.5px", color: "#64748B", marginTop: "2px" }}>Location: {exp.lieu}</div>}
-            {exp.details && <p style={{ color: "#475569", fontSize: "10.5px", margin: "4px 0", textAlign: "justify" }}>{exp.details}</p>}
-            {exp.bullets && exp.bullets.length > 0 && (
-              <ul style={{ paddingLeft: "12px", margin: "0", color: "#334155", fontSize: "10.5px", listStyleType: "square" }}>
-                {exp.bullets.map((b, bIdx) => (
-                  <li key={bIdx} style={{ marginBottom: "2px" }}>{b}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Educations */}
-      <div style={{ marginBottom: "18px" }}>
-        <div style={{ fontSize: "11px", fontWeight: "700", color: "#0F172A", borderBottom: "2px solid #0F172A", paddingBottom: "4px", marginBottom: "12px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase" }}>
-          # EDUCATION
-        </div>
-        {(cv.formations || []).map((f, idx) => (
-          <div key={idx} style={{ marginBottom: "10px", borderLeft: "2px solid #E2E8F0", paddingLeft: "14px", marginLeft: "4px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#0F172A", fontSize: "11px" }}>
-              <span>{f.diplome} <span style={{ color: "#64748B" }}>- {f.ecole}</span></span>
-              <span style={{ color: "#64748B", fontWeight: "500", fontFamily: "'DM Mono', monospace", fontSize: "10.5px" }}>{f.dates}</span>
-            </div>
-            {f.details && <p style={{ color: "#64748B", fontSize: "10px", marginTop: "2px" }}>{f.details}</p>}
-          </div>
-        ))}
-      </div>
-
-      {/* Skills */}
-      <div>
-        <div style={{ fontSize: "11px", fontWeight: "700", color: "#0F172A", borderBottom: "2px solid #0F172A", paddingBottom: "4px", marginBottom: "12px", fontFamily: "'DM Mono', monospace", textTransform: "uppercase" }}>
-          # TECHNICAL SKILLS & MORE
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "10.5px", color: "#334155" }}>
-          {cv.competences?.finance && (
-            <div style={{ border: "1px dashed #E2E8F0", padding: "8px" }}>
-              <strong>[skills]</strong> {cv.competences.finance}
-            </div>
-          )}
-          {cv.competences?.outils && (
-            <div style={{ border: "1px dashed #E2E8F0", padding: "8px" }}>
-              <strong>[tools]</strong> {cv.competences.outils}
-            </div>
-          )}
-          {cv.competences?.langues && (
-            <div style={{ border: "1px dashed #E2E8F0", padding: "8px" }}>
-              <strong>[languages]</strong> {cv.competences.langues}
-            </div>
-          )}
-          {cv.competences?.interets && (
-            <div style={{ border: "1px dashed #E2E8F0", padding: "8px" }}>
-              <strong>[interests]</strong> {cv.competences.interets}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+const renderLetterBody = (text) => {
+  return (text || "").split(/\n\n+/).map((p, i) => (
+    <p key={i} style={{ margin: "0 0 14px 0", textAlign: "justify", textIndent: "0" }}>
+      {p.split("\n").map((line, j) => (
+        <span key={j}>
+          {line}
+          {j < p.split("\n").length - 1 && <br />}
+        </span>
+      ))}
+    </p>
+  ));
 };
 
 // Accordion UI Wrapper Component for CV Builder Editor
@@ -964,23 +638,66 @@ const AccordionSection = ({ title, isOpen, onToggle, children, icon }) => (
   </div>
 );
 
+const initialCvProfile = {
+  titre: "Ingénieure Full-Stack & Cloud",
+  profil: "Développeuse passionnée avec 6 ans d'expérience en conception d'applications web modernes. Expertise React, Node.js et architectures cloud AWS. Certifiée AWS Solutions Architect.",
+  experiences: [
+    {
+      poste: "Lead Développeuse Full-Stack",
+      entreprise: "TechVision",
+      ville: "Paris",
+      periode: "2022 – Présent",
+      description: "Pilotage technique d'une équipe de 5 développeurs. Refonte complète de l'architecture front-end React."
+    },
+    {
+      poste: "Développeuse Full-Stack",
+      entreprise: "CloudScale",
+      ville: "Lyon",
+      periode: "2020 – 2022",
+      description: "Conception et développement de microservices Node.js/AWS. Amélioration des temps de réponse de 40%."
+    }
+  ],
+  formations: [
+    {
+      diplome: "Master Informatique",
+      ecole: "Sorbonne Université",
+      ville: "Paris",
+      periode: "2018 – 2020"
+    }
+  ],
+  competences: {
+    techniques: "React, Vue, Node.js, AWS, Docker, CI/CD",
+    langues: "Anglais (Courant), Espagnol (Scolaire)",
+    interets: "Randonnée, Technologie, Photographie"
+  }
+};
+
 // ── COMPOSANT PRINCIPAL ───────────────────────────────────────────────────────
-export default function AgentCandidature() {
+export default function AgentCandidature({
+  initialView = "builder",
+  initialShowGmail = false,
+  onNavigate,
+  onSearch,
+  selectedCandidatureId,
+  clearSelectedCandidatureId
+}) {
   const [step, setStep] = useState(0);
   const [offre, setOffre] = useState("");
   const [cvTexte, setCvTexte] = useState("");
   const [cvNom, setCvNom] = useState("");
   const [infos, setInfos] = useState({
-    prenom: "Renaud", nom: "Miko",
-    titre: "Master 2 Finance d'Entreprise & Ingénierie Financière — INSEEC MSc Paris",
-    ville: "Paris", email: "renaudmiko90@gmail.com", tel: "",
+    prenom: "Marie", nom: "Laurent",
+    titre: "Ingénieure Full-Stack & Cloud",
+    ville: "Paris, France", email: "marie.laurent@example.com", tel: "06 12 34 56 78",
   });
 
   // Re-grouped state declarations to prevent Temporal Dead Zone (TDZ) ReferenceErrors
-  const [cvProfile, setCvProfile] = useState(null);
+  const [cvProfile, setCvProfile] = useState(initialCvProfile);
   const [hasNewUpload, setHasNewUpload] = useState(false);
   const [templateMode, setTemplateMode] = useState("auto"); // "auto" or "manual"
   const [selectedTemplate, setSelectedTemplate] = useState("corporate");
+  const [selectedLetterTemplate, setSelectedLetterTemplate] = useState("classic_sora");
+  const [photoUrl, setPhotoUrl] = useState(null);
   const [openSection, setOpenSection] = useState("identite");
   const [rewritingProfile, setRewritingProfile] = useState(false);
   const [regenLettre, setRegenLettre] = useState(false);
@@ -991,6 +708,40 @@ export default function AgentCandidature() {
   const [activeDashboardTab, setActiveDashboardTab] = useState("documents"); // "documents", "tracker", "reminders"
   const [newReminderText, setNewReminderText] = useState("");
   const [newReminderDate, setNewReminderDate] = useState("");
+  const [previewingTemplate, setPreviewingTemplate] = useState(null); // null or { type: 'cv' | 'letter', template: tpl }
+  const [selectedFont, setSelectedFont] = useState("Inter");
+
+  const [chatMessages, setChatMessages] = useState([
+    { sender: "bot", text: "Bonjour ! Je suis MIKA, ton assistant virtuel. Pose-moi n'importe quelle question sur l'utilisation du site (ex: comment lier mon Gmail, comment optimiser mon CV) !" }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const sendChatMessage = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+
+    setChatMessages(prev => [...prev, { sender: "user", text }]);
+    setChatInput("");
+    setChatLoading(true);
+
+    try {
+      const res = await fetch("/api/chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: text })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur serveur");
+
+      setChatMessages(prev => [...prev, { sender: "bot", text: data.text }]);
+    } catch (e) {
+      console.error(e);
+      setChatMessages(prev => [...prev, { sender: "bot", text: "Désolé, je rencontre une petite erreur technique temporaire." }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   const [optimisationCV, setOptimisationCV] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -1020,6 +771,28 @@ export default function AgentCandidature() {
   const [configMessage, setConfigMessage] = useState("");
   const [configError, setConfigError] = useState("");
 
+  // Synchronize view state from props
+  useEffect(() => {
+    setActiveView(initialView === "builder" ? "builder" : "dashboard");
+    setShowGmailPanel(initialShowGmail);
+  }, [initialView, initialShowGmail]);
+
+  // Handle Spotlight search selection
+  useEffect(() => {
+    if (selectedCandidatureId && candidatures.length > 0) {
+      const match = candidatures.find(c => String(c.id) === String(selectedCandidatureId));
+      if (match) {
+        setSelectedCandidature(match);
+        setActiveView("dashboard");
+        setShowGmailPanel(false);
+        setActiveDashboardTab("tracker"); // Show the tracker/timeline directly!
+      }
+      if (clearSelectedCandidatureId) {
+        clearSelectedCandidatureId();
+      }
+    }
+  }, [selectedCandidatureId, candidatures, clearSelectedCandidatureId]);
+
   const getUserKey = () => `cvProfile_${infos.email || "default"}`;
   const loadedEmailRef = useRef(infos.email);
 
@@ -1035,7 +808,7 @@ export default function AgentCandidature() {
         console.error("Erreur chargement localStorage:", e);
       }
     } else {
-      setCvProfile(null);
+      setCvProfile(initialCvProfile);
     }
     loadedEmailRef.current = infos.email;
   }, [infos.email]);
@@ -1734,7 +1507,7 @@ RÈGLE STRICTE : Retourne UNIQUEMENT le texte de l'accroche optimisée. Sans com
     if (!analyse || !offre.trim()) return;
     setRegenLettre(true);
     try {
-      const systemPrompt = `Tu es un rédacteur expert en lettres de motivation françaises premium, appliquant la VERSION ROTHSCHILD+.
+      const systemPrompt = `Tu es un rédacteur expert en lettres de motivation françaises premium.
 Tu dois faire la rédaction et retourner uniquement un JSON strict valide, sans markdown, sans texte avant/après.
 
 FORMAT JSON OBLIGATOIRE :
@@ -1743,7 +1516,7 @@ FORMAT JSON OBLIGATOIRE :
   "objet_lettre": ""
 }
 
-RÈGLES LETTRE DE MOTIVATION PREMIUM — VERSION ROTHSCHILD+ (STRICTEMENT APPLIQUÉES) :
+RÈGLES LETTRE DE MOTIVATION PREMIUM (STRICTEMENT APPLIQUÉES) :
 - La lettre doit être hautement personnalisée, naturelle, professionnelle et IMMÉDIATEMENT envoyable
 - Elle doit commencer exactement par "Madame, Monsieur,"
 - Elle doit se terminer exactement par "Je vous adresse mes sincères salutations,"
@@ -2012,189 +1785,79 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
   };
 
   const printContent = (type, candCvOverride = null) => {
-    const printWindow = window.open("", "_blank", "width=900,height=700");
-    if (!printWindow) {
-      alert("Le navigateur a bloqué la fenêtre d'impression. Autorise les popups pour ce site.");
-      return;
-    }
+    // 100ms sync delay to ensure DOM updates are fully rendered before printing
+    setTimeout(() => {
+      const printWindow = window.open("", "_blank", "width=900,height=700");
+      if (!printWindow) {
+        alert("Le navigateur a bloqué la fenêtre d'impression. Autorise les popups pour ce site.");
+        return;
+      }
 
-    const fontsLink = `<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Sora:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">`;
-    const printMeta = `
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        @media print {
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
-          @page { margin: 0; size: A4; }
-          body { background: #ffffff !important; }
-        }
-      </style>
-    `;
-
-    if (type === "cv") {
-      const cvEl = document.getElementById("cv-preview-print");
-      if (!cvEl) return;
-      const clonedHTML = cvEl.innerHTML;
-
-      printWindow.document.write(`<!DOCTYPE html><html><head>
-        <meta charset="utf-8">
-        <title>CV — ${infos.prenom} ${infos.nom}</title>
-        ${fontsLink}
-        ${printMeta}
-      </head><body style="background:#fff;">
-        ${clonedHTML}
-      </body></html>`);
-    } else {
-      const activeCv = candCvOverride || cvProfile || {};
-      const lettreContent = lettre || "";
-      const identite = activeCv.identite || {};
-      const ana = analyse || {};
-      const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
-      const senderName = `${infos.prenom || ""} ${infos.nom || ""}`.trim();
-      const senderEmail = identite.email || infos.email || "";
-      const senderTel = identite.telephone || infos.tel || "";
-      const senderVille = identite.ville || infos.ville || "";
-      const destEntreprise = ana.entreprise || "";
-      const destPoste = ana.poste || "";
-      const destLieu = ana.lieu || "";
-      const objet = objetLettre || `Candidature au poste de ${destPoste}${destEntreprise ? " — " + destEntreprise : ""}`;
-
-      // Format letter paragraphs: split by double newline or single newline
-      const lettreParas = lettreContent.split(/\n\n+/).map(p => `<p style="margin:0 0 14px 0;text-align:justify;text-indent:0;">${p.replace(/\n/g, "<br>")}</p>`).join("");
-
-      printWindow.document.write(`<!DOCTYPE html><html><head>
-        <meta charset="utf-8">
-        <title>Lettre de motivation — ${senderName}</title>
-        ${fontsLink}
-        ${printMeta}
+      const fontsLink = `<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">`;
+      const printMeta = `
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          @page { size: A4; margin: 0; }
-          body {
-            font-family: 'Sora', sans-serif;
-            color: #1A1A2E;
-            background: #ffffff;
-            width: 210mm;
-            min-height: 297mm;
-            padding: 28mm 25mm 25mm 25mm;
-            font-size: 11.5px;
-            line-height: 1.75;
-          }
-          .sender-block {
-            margin-bottom: 28px;
-            line-height: 1.6;
-          }
-          .sender-name {
-            font-weight: 700;
-            font-size: 14px;
-            color: #1E3A8A;
-          }
-          .sender-info {
-            font-size: 11px;
-            color: #475569;
-          }
-          .dest-block {
-            text-align: right;
-            margin-bottom: 20px;
-            line-height: 1.6;
-          }
-          .dest-name {
-            font-weight: 700;
-            font-size: 12px;
-            color: #1E293B;
-          }
-          .dest-info {
-            font-size: 11px;
-            color: #475569;
-          }
-          .date-block {
-            text-align: right;
-            font-size: 11px;
-            color: #64748B;
-            margin-bottom: 28px;
-          }
-          .objet-block {
-            margin-bottom: 22px;
-            font-size: 12px;
-          }
-          .objet-label {
-            font-weight: 700;
-            color: #1E293B;
-          }
-          .objet-text {
-            font-weight: 700;
-            color: #1E3A8A;
-          }
-          .lettre-body {
-            font-size: 11.5px;
-            line-height: 1.85;
-            color: #1A1A2E;
-          }
-          .lettre-body p {
-            text-align: justify;
-          }
-          .signature-block {
-            margin-top: 32px;
-            line-height: 1.6;
-          }
-          .signature-name {
-            font-weight: 700;
-            font-size: 12px;
-            color: #1E3A8A;
-            margin-top: 6px;
+          .font-override-Inter * { font-family: 'Inter', sans-serif !important; }
+          .font-override-Poppins * { font-family: 'Poppins', sans-serif !important; }
+          .font-override-Lora * { font-family: 'Lora', Georgia, serif !important; }
+          .font-override-Playfair * { font-family: 'Playfair Display', Georgia, serif !important; }
+          .font-override-Outfit * { font-family: 'Outfit', sans-serif !important; }
+          .font-override-Roboto * { font-family: 'Roboto', sans-serif !important; }
+          .font-override-FiraCode * { font-family: 'Fira Code', 'Share Tech Mono', monospace !important; }
+          @media print {
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            @page { margin: 0; size: A4; }
+            body { background: #ffffff !important; }
           }
         </style>
-      </head><body>
-        <div class="sender-block">
-          <div class="sender-name">${escapeHtml(senderName)}</div>
-          ${senderEmail ? `<div class="sender-info">✉ ${escapeHtml(senderEmail)}</div>` : ""}
-          ${senderTel ? `<div class="sender-info">☎ ${escapeHtml(senderTel)}</div>` : ""}
-          ${senderVille ? `<div class="sender-info">📍 ${escapeHtml(senderVille)}</div>` : ""}
-        </div>
+      `;
 
-        <div class="dest-block">
-          ${destEntreprise ? `<div class="dest-name">${escapeHtml(destEntreprise)}</div>` : ""}
-          ${destPoste ? `<div class="dest-info">Poste : ${escapeHtml(destPoste)}</div>` : ""}
-          ${destLieu ? `<div class="dest-info">${escapeHtml(destLieu)}</div>` : ""}
-        </div>
+      if (type === "cv") {
+        const cvEl = document.getElementById("cv-preview-print");
+        if (!cvEl) return;
+        const clonedHTML = cvEl.innerHTML;
 
-        <div class="date-block">
-          ${escapeHtml(senderVille ? senderVille + ", le " + dateStr : dateStr)}
-        </div>
+        printWindow.document.write(`<!DOCTYPE html><html><head>
+          <meta charset="utf-8">
+          <title>CV — ${infos.prenom} ${infos.nom}</title>
+          ${fontsLink}
+          ${printMeta}
+        </head><body style="background:#fff;">
+          ${clonedHTML}
+        </body></html>`);
+      } else {
+        const letterEl = document.getElementById("lettre-preview-print");
+        if (!letterEl) return;
+        const clonedHTML = letterEl.innerHTML;
 
-        <div class="objet-block">
-          <span class="objet-label">Objet : </span>
-          <span class="objet-text">${escapeHtml(objet)}</span>
-        </div>
+        printWindow.document.write(`<!DOCTYPE html><html><head>
+          <meta charset="utf-8">
+          <title>Lettre de motivation — ${infos.prenom} ${infos.nom}</title>
+          ${fontsLink}
+          ${printMeta}
+        </head><body style="background:#fff;">
+          <div style="width:210mm; min-height:297mm; padding:28mm 25mm 25mm 25mm; box-sizing:border-box;">
+            ${clonedHTML}
+          </div>
+        </body></html>`);
+      }
 
-        <div class="lettre-body">
-          ${lettreParas}
-        </div>
+      printWindow.document.close();
 
-        <div class="signature-block">
-          <div class="signature-name" style="font-weight:700;">${escapeHtml(senderName)}</div>
-          ${senderTel ? `<div style="font-size:11px;color:#475569;margin-top:2px;">Tél : ${escapeHtml(senderTel)}</div>` : ""}
-          ${identite.linkedin ? `<div style="font-size:11px;color:#475569;">LinkedIn : ${escapeHtml(identite.linkedin)}</div>` : ""}
-        </div>
-      </body></html>`);
-    }
-
-    printWindow.document.close();
-
-    // Wait for fonts to load, then trigger print
-    let printed = false;
-    const triggerPrint = () => {
-      if (printed) return;
-      printed = true;
-      printWindow.focus();
-      printWindow.print();
-    };
-    printWindow.onload = triggerPrint;
-    // Fallback if onload doesn't fire (some browsers)
-    setTimeout(triggerPrint, 1500);
+      let printed = false;
+      const triggerPrint = () => {
+        if (printed) return;
+        printed = true;
+        printWindow.focus();
+        printWindow.print();
+      };
+      printWindow.onload = triggerPrint;
+      setTimeout(triggerPrint, 1500);
+    }, 100);
   };
 
   // ── CRM Helper Functions ──────────────────────────────────────────────────────
@@ -2339,15 +2002,33 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
           padding: "13px 28px", display: "flex", alignItems: "center", gap: 14,
           position: "sticky", top: 0, zIndex: 100,
         }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 8,
-            background: `linear-gradient(135deg,${C.accent},${C.purple})`,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17,
-          }}>⚡</div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-0.02em" }}>Agent IA Candidatures & Studio CV</div>
-            <div style={{ fontSize: 10, color: C.muted, fontFamily: "'DM Mono',monospace" }}>
-              upload CV · choix modèle / IA · éditeur en direct · export PDF haute fidélité
+          {/* Brand/Logo navigation back to Landing Page */}
+          <div
+            onClick={() => onNavigate && onNavigate("hero")}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginRight: 10
+            }}
+          >
+            <svg style={{ width: 36, height: 36, filter: "drop-shadow(0 4px 8px rgba(112,38,232,0.35))" }} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="logoGradDark" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#00F0FF" />
+                  <stop offset="50%" stopColor="#7026E8" />
+                  <stop offset="100%" stopColor="#FF4A70" />
+                </linearGradient>
+              </defs>
+              <path d="M10 30L20 10L30 30" stroke="url(#logoGradDark)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M15 20H25" stroke="url(#logoGradDark)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M20 10V30" stroke="url(#logoGradDark)" strokeWidth="2.5" strokeDasharray="3 3" strokeLinecap="round" />
+              <circle cx="20" cy="10" r="3.5" fill="#00F0FF" />
+              <circle cx="10" cy="30" r="3.5" fill="#7026E8" />
+              <circle cx="30" cy="30" r="3.5" fill="#FF4A70" />
+            </svg>
+            <div>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: 28, letterSpacing: "0.05em", color: "#FFF", lineHeight: 1.0 }}>MIKA</div>
+              <div style={{ fontSize: 8.5, color: C.accent, fontFamily: "'Orbitron', sans-serif", fontWeight: 300, letterSpacing: "3.5px", marginTop: 4 }}>
+                MY INTELLIGENT KAREER ASSISTANT
+              </div>
             </div>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
@@ -2362,6 +2043,18 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
               }}
             >
               👤 Optimiseur & Studio
+            </button>
+            <button
+              onClick={() => { setActiveView("templates"); setActiveTab("cv"); }}
+              style={{
+                background: activeView === "templates" ? C.accent + "20" : "transparent",
+                border: `1px solid ${activeView === "templates" ? C.accent + "66" : C.border}`,
+                color: activeView === "templates" ? C.accent : C.muted,
+                padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                cursor: "pointer", transition: "all 0.2s"
+              }}
+            >
+              🎨 Modèles & Designs
             </button>
             <button
               onClick={() => setActiveView("dashboard")}
@@ -2399,6 +2092,39 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
               )}
             </button>
             <div style={{ width: 1, height: 20, background: C.border }} />
+
+            <button
+              onClick={() => onNavigate && onNavigate("recruiter")}
+              style={{
+                background: "transparent",
+                border: `1px solid ${C.border}`,
+                color: C.muted,
+                padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6
+              }}
+            >
+              🏢 Recruteur
+            </button>
+
+            <div style={{ width: 1, height: 20, background: C.border }} />
+
+            {/* Search Icon Button */}
+            <button
+              onClick={onSearch}
+              style={{
+                background: "transparent", border: "none", color: C.muted,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                padding: 6, transition: "color 0.2s"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = C.accent}
+              onMouseLeave={(e) => e.currentTarget.style.color = C.muted}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.637 10.637Z" />
+              </svg>
+            </button>
+
+            <div style={{ width: 1, height: 20, background: C.border }} />
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: C.green, boxShadow: `0 0 8px ${C.green}` }} className="pulse" />
               <span style={{ fontSize: 10, color: C.muted, fontFamily: "'DM Mono',monospace" }}>Gemini actif</span>
@@ -2414,7 +2140,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
             {/* STEP 0 */}
             {step === 0 && (
               <div className="slide">
-                <div style={{ display: "grid", gridTemplateColumns: "330px 1fr", gap: 18 }}>
+                <div className="builder-grid">
 
                   {/* Gauche */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2454,45 +2180,21 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                       {/* Modèle de CV */}
                       <Section title="2. Modèle de CV" icon="🎨" accent={C.gold}>
                         <div style={{ marginBottom: 10 }}>
-                          <div style={{ display: "flex", gap: 14, marginBottom: 10 }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: C.text, cursor: "pointer", fontWeight: 500 }}>
-                              <input
-                                type="radio"
-                                name="templateMode"
-                                checked={templateMode === "auto"}
-                                onChange={() => setTemplateMode("auto")}
-                                style={{ accentColor: C.accent }}
-                              />
-                              🤖 Recommander (IA)
-                            </label>
-                            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: C.text, cursor: "pointer", fontWeight: 500 }}>
-                              <input
-                                type="radio"
-                                name="templateMode"
-                                checked={templateMode === "manual"}
-                                onChange={() => setTemplateMode("manual")}
-                                style={{ accentColor: C.accent }}
-                              />
-                              ✏️ Manuel
-                            </label>
-                          </div>
-
-                          {templateMode === "manual" && (
-                            <select
-                              value={selectedTemplate}
-                              onChange={e => setSelectedTemplate(e.target.value)}
-                              style={{
-                                width: "100%", background: C.bg, border: `1px solid ${C.border}`,
-                                borderRadius: 7, padding: "7.5px 11px", color: C.text,
-                                fontSize: 12, outline: "none",
-                              }}
-                            >
-                              <option value="corporate">💼 Corporate Elegance (Modern)</option>
-                              <option value="minimalist">✒️ Minimalist Executive (Serif)</option>
-                              <option value="creative">🎨 Creative Edge (Visual sidebar)</option>
-                              <option value="tech">💻 Tech Monospace (Developer)</option>
-                            </select>
-                          )}
+                          <select
+                            value={selectedTemplate}
+                            onChange={e => setSelectedTemplate(e.target.value)}
+                            style={{
+                              width: "100%", background: C.bg, border: `1px solid ${C.border}`,
+                              borderRadius: 7, padding: "7.5px 11px", color: C.text,
+                              fontSize: 12, outline: "none",
+                            }}
+                          >
+                            {CV_TEMPLATES.map(tpl => (
+                              <option key={tpl.id} value={tpl.id}>
+                                {tpl.premium ? "✦ " : ""}{tpl.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </Section>
 
@@ -2519,11 +2221,33 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                             />
                           </div>
                         ))}
+                        <div style={{ marginTop: 10 }}>
+                          <div style={{ fontSize: 9, color: C.muted, marginBottom: 3, fontFamily: "'DM Mono',monospace", letterSpacing: "0.08em" }}>PHOTO DE PROFIL</div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setPhotoUrl(reader.result);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            style={{
+                              width: "100%", background: C.bg, border: `1px solid ${C.border}`,
+                              borderRadius: 7, padding: "7px 11px", color: C.text,
+                              fontSize: 12, outline: "none",
+                            }}
+                          />
+                        </div>
                       </Section>
                     </Card>
                   </div>
 
-                  {/* Droite */}
+                  {/* Milieu */}
                   <Card>
                     <Section title="Offre d'emploi" icon="💼" accent={C.gold}>
                       <textarea
@@ -2557,6 +2281,96 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                       ⚡ Lancer l'agent — CV final · Lettre premium
                     </button>
                   </Card>
+
+                  {/* Assistant IA Panel */}
+                  <Card style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", background: "rgba(22, 18, 46, 0.15)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", border: "1px solid rgba(168, 85, 247, 0.12)" }}>
+                    <Section title="Assistant IA Quantique" icon="🤖" accent={C.accent}>
+                      <div style={{ position: "relative", width: "100%", borderRadius: 12, overflow: "hidden", border: `1px solid rgba(0, 240, 255, 0.3)`, boxShadow: `0 0 15px rgba(0, 240, 255, 0.15)`, marginBottom: 12 }}>
+                        <img
+                          src="/avatar-character.png"
+                          alt="Assistant IA Avatar"
+                          style={{ width: "100%", display: "block", filter: "brightness(0.95)" }}
+                        />
+                        <div style={{
+                          position: "absolute", bottom: 0, left: 0, right: 0,
+                          background: "linear-gradient(to top, rgba(6, 5, 12, 0.95), transparent)",
+                          padding: "16px 12px 10px 12px",
+                          display: "flex", justifyContent: "center", gap: 8
+                        }}>
+                          <span style={{
+                            fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+                            background: "rgba(0, 240, 255, 0.15)", color: "#00F0FF",
+                            padding: "2px 8px", borderRadius: 12, border: "1px solid rgba(0, 240, 255, 0.4)",
+                            fontWeight: "bold", textTransform: "uppercase"
+                          }}>SYSTEM: ACTIVE</span>
+                          <span style={{
+                            fontFamily: "'Share Tech Mono', monospace", fontSize: 10,
+                            background: "rgba(255, 176, 0, 0.15)", color: "#FFB020",
+                            padding: "2px 8px", borderRadius: 12, border: "1px solid rgba(255, 176, 0, 0.4)",
+                            fontWeight: "bold", textTransform: "uppercase"
+                          }}>✦ Premium</span>
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, marginBottom: 16 }}>
+                        MIKA analyse ton profil en temps réel et génère une candidature sur-mesure, prête à envoyer.
+                      </div>
+
+                      {/* Chat messages */}
+                      <div style={{
+                        height: 220, overflowY: "auto", display: "flex", flexDirection: "column",
+                        gap: 10, padding: 10, background: "rgba(10, 8, 22, 0.4)",
+                        border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8,
+                        marginBottom: 10, textAlign: "left"
+                      }}>
+                        {chatMessages.map((msg, idx) => (
+                          <div key={idx} style={{
+                            alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+                            maxWidth: "85%", padding: "8px 12px", fontSize: 12, lineHeight: 1.5,
+                            borderRadius: msg.sender === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                            background: msg.sender === "user" ? `${C.purple}44` : "rgba(255,255,255,0.06)",
+                            border: msg.sender === "user" ? `1px solid ${C.purple}66` : "1px solid rgba(255,255,255,0.1)",
+                            color: "#F8FAFC"
+                          }}>
+                            {msg.text}
+                          </div>
+                        ))}
+                        {chatLoading && (
+                          <div style={{
+                            alignSelf: "flex-start", fontSize: 11.5, color: C.accent,
+                            fontStyle: "italic", paddingLeft: 4, display: "flex", alignItems: "center", gap: 6
+                          }}>
+                            <span className="pulse">●</span> MIKA est en train d'écrire...
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Chat Input */}
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input
+                          value={chatInput}
+                          onChange={e => setChatInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") sendChatMessage(); }}
+                          placeholder="Pose une question à MIKA..."
+                          style={{
+                            flex: 1, background: "rgba(10, 8, 22, 0.8)", border: `1px solid rgba(0, 240, 255, 0.25)`,
+                            borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12.5, outline: "none"
+                          }}
+                        />
+                        <button
+                          onClick={sendChatMessage}
+                          style={{
+                            background: C.accent, border: "none", borderRadius: 8, width: 36, height: 36,
+                            display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                            color: "#fff", fontSize: 14, fontWeight: "bold"
+                          }}
+                        >
+                          ⚡
+                        </button>
+                      </div>
+                    </Section>
+                  </Card>
+
                 </div>
               </div>
             )}
@@ -2824,55 +2638,155 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                 </div>
 
                 {activeTab === "lettre" && lettre && (
-                  <Card>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                      <Label>Lettre générée — éditable avant export</Label>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <Btn onClick={regenererLettreSeule} color={C.purple} size="sm" disabled={regenLettre}>
-                          {regenLettre ? "⚡ Regénération..." : "🔄 Regénérer la lettre"}
-                        </Btn>
-                        <Btn onClick={() => copy(lettre, "lettre")} color={copied === "lettre" ? C.green : C.accent} size="sm">
-                          {copied === "lettre" ? "✓ Copié" : "Copier"}
-                        </Btn>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 20, alignItems: "start" }} className="slide">
+                    {/* Gauche : Éditeur de Lettre */}
+                    <Card style={{ maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                        <Label>Lettre générée (Éditable)</Label>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <Btn onClick={regenererLettreSeule} color={C.purple} size="sm" disabled={regenLettre}>
+                            {regenLettre ? "⚡ Regénération..." : "🔄 Regénérer"}
+                          </Btn>
+                          <Btn onClick={() => copy(lettre, "lettre")} color={copied === "lettre" ? C.green : C.accent} size="sm">
+                            {copied === "lettre" ? "✓ Copié" : "Copier"}
+                          </Btn>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: 12 }}>
+                        <Label>Objet de la lettre</Label>
+                        <input
+                          value={objetLettre}
+                          onChange={e => setObjetLettre(e.target.value)}
+                          style={{
+                            width: "100%", background: C.bg, border: `1px solid ${C.border}`,
+                            borderRadius: 7, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none",
+                            fontWeight: "bold", fontFamily: "'Sora',sans-serif"
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: 12, background: "#FFF", boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>
+                        <textarea
+                          id="lettre-print"
+                          value={lettre}
+                          onChange={e => {
+                            setLettre(e.target.value);
+                            const newScore = calculateATSScore(analyse, e.target.value, cvProfile);
+                            setAtsScore(newScore);
+                          }}
+                          rows={18}
+                          style={{
+                            width: "100%", background: "#FFF", border: "none",
+                            color: "#1A1A2E", fontSize: 12.5, lineHeight: 1.7, outline: "none",
+                            fontFamily: "'Sora',sans-serif", resize: "none"
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginTop: 8, fontSize: 10, color: C.muted, fontFamily: "'DM Mono',monospace" }}>
+                        ✎ Modifie directement ci-dessus pour recalculer le score ATS
+                      </div>
+                    </Card>
+
+                    {/* Droite : Rendu Réactif de la Lettre */}
+                    <div style={{ position: "sticky", top: 80, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        background: C.panel, padding: "10px 14px", borderRadius: 8,
+                        border: `1px solid ${C.border}`
+                      }}>
+                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase" }}>Modèle :</span>
+                            <select
+                              value={selectedLetterTemplate}
+                              onChange={(e) => setSelectedLetterTemplate(e.target.value)}
+                              style={{
+                                background: "#120e26", color: "#FFF", border: `1px solid ${C.border}`,
+                                borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none",
+                                fontWeight: 600, cursor: "pointer"
+                              }}
+                            >
+                              {LETTER_TEMPLATES.map(tpl => (
+                                <option key={tpl.id} value={tpl.id} style={{ background: "#120e26", color: "#FFF" }}>
+                                  {tpl.premium ? "✦ " : ""}{tpl.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase" }}>Police :</span>
+                            <select
+                              value={selectedFont}
+                              onChange={(e) => setSelectedFont(e.target.value)}
+                              style={{
+                                background: "#120e26", color: "#FFF", border: `1px solid ${C.border}`,
+                                borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none",
+                                fontWeight: 600, cursor: "pointer"
+                              }}
+                            >
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Inter">Inter (Sans)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Poppins">Poppins (Rond)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Lora">Lora (Serif)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Playfair">Playfair (Classique)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Outfit">Outfit (Moderne)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Roboto">Roboto (Pro)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="FiraCode">Fira Code (Tech)</option>
+                            </select>
+                          </div>
+                        </div>
                         <Btn onClick={() => printContent("lettre")} color={C.gold} size="sm">
-                          ⬇ Imprimer / Exporter PDF
+                          🖨️ Imprimer / PDF
                         </Btn>
                       </div>
+
+                      <div style={{
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 8,
+                        background: "#FFFFFF",
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                        maxHeight: "calc(100vh - 210px)",
+                        overflowY: "auto",
+                      }}>
+                        <div id="lettre-preview-print" style={{ background: "#ffffff" }}>
+                          <div className={`font-override-${selectedFont}`} style={{ minHeight: "100%" }}>
+                            {(() => {
+                              const tpl = LETTER_TEMPLATES.find(t => t.id === selectedLetterTemplate) || LETTER_TEMPLATES[0];
+                              const Comp = tpl.component;
+                            const activeCv = cvProfile || {};
+                            const identite = activeCv.identite || {};
+                            const ana = analyse || {};
+                            const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+                            const senderName = `${infos.prenom || ""} ${infos.nom || ""}`.trim();
+                            const senderEmail = identite.email || infos.email || "";
+                            const senderTel = identite.telephone || infos.tel || "";
+                            const senderVille = identite.ville || infos.ville || "";
+                            const destEntreprise = ana.entreprise || "";
+                            const destPoste = ana.poste || "";
+                            const destLieu = ana.lieu || "";
+                            const objet = objetLettre || `Candidature au poste de ${destPoste}${destEntreprise ? " — " + destEntreprise : ""}`;
+
+                            return (
+                              <Comp
+                                body={renderLetterBody(lettre)}
+                                senderName={senderName}
+                                senderEmail={senderEmail}
+                                senderTel={senderTel}
+                                senderVille={senderVille}
+                                destEntreprise={destEntreprise}
+                                destPoste={destPoste}
+                                destLieu={destLieu}
+                                objet={objet}
+                                dateStr={dateStr}
+                              />
+                            );
+                          })()}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ marginBottom: 12 }}>
-                      <Label>Objet de la lettre</Label>
-                      <input
-                        value={objetLettre}
-                        onChange={e => setObjetLettre(e.target.value)}
-                        style={{
-                          width: "100%", background: C.bg, border: `1px solid ${C.border}`,
-                          borderRadius: 7, padding: "8px 12px", color: C.text, fontSize: 13, outline: "none",
-                          fontWeight: "bold", fontFamily: "'Sora',sans-serif"
-                        }}
-                      />
-                    </div>
-                    <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: 18, background: "#FFF", boxShadow: "0 10px 25px rgba(0,0,0,0.3)" }}>
-                      <textarea
-                        id="lettre-print"
-                        value={lettre}
-                        onChange={e => {
-                          setLettre(e.target.value);
-                          // Recalculate ATS score on manual edits (debounced feel)
-                          const newScore = calculateATSScore(analyse, e.target.value, cvProfile);
-                          setAtsScore(newScore);
-                        }}
-                        rows={23}
-                        style={{
-                          width: "100%", background: "#FFF", border: "none",
-                          color: "#1A1A2E", fontSize: 13, lineHeight: 1.85, outline: "none",
-                          fontFamily: "'Sora',sans-serif", resize: "none"
-                        }}
-                      />
-                    </div>
-                    <div style={{ marginTop: 8, fontSize: 10, color: C.muted, fontFamily: "'DM Mono',monospace" }}>
-                      ✎ Modifie directement dans ce champ · Le score ATS se recalcule automatiquement
-                    </div>
-                  </Card>
+                  </div>
                 )}
 
                 {activeTab === "cv" && cvProfile && (
@@ -2961,6 +2875,24 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                               style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", color: C.text, fontSize: 12, outline: "none" }}
                             />
                           </div>
+                        </div>
+                        <div style={{ marginTop: 10 }}>
+                          <Label>Photo de Profil (pour les modèles compatibles)</Label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setPhotoUrl(reader.result);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            style={{ width: "100%", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, padding: "6px 10px", color: C.text, fontSize: 11.5, outline: "none" }}
+                          />
                         </div>
                       </AccordionSection>
 
@@ -3209,22 +3141,46 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                         background: C.panel, padding: "10px 14px", borderRadius: 8,
                         border: `1px solid ${C.border}`
                       }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <span style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase" }}>Modèle :</span>
-                          <select
-                            value={selectedTemplate}
-                            onChange={(e) => setSelectedTemplate(e.target.value)}
-                            style={{
-                              background: C.bg, color: C.text, border: `1px solid ${C.border}`,
-                              borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none",
-                              fontWeight: 600, cursor: "pointer"
-                            }}
-                          >
-                            <option value="corporate">💼 Corporate Elegance</option>
-                            <option value="minimalist">✒️ Minimalist Executive</option>
-                            <option value="creative">🎨 Creative Edge</option>
-                            <option value="tech">💻 Tech Monospace</option>
-                          </select>
+                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase" }}>Modèle :</span>
+                            <select
+                              value={selectedTemplate}
+                              onChange={(e) => setSelectedTemplate(e.target.value)}
+                              style={{
+                                background: "#120e26", color: "#FFF", border: `1px solid ${C.border}`,
+                                borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none",
+                                fontWeight: 600, cursor: "pointer"
+                              }}
+                            >
+                              {CV_TEMPLATES.map(tpl => (
+                                <option key={tpl.id} value={tpl.id} style={{ background: "#120e26", color: "#FFF" }}>
+                                  {tpl.premium ? "✦ " : ""}{tpl.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: C.muted, fontWeight: 600, textTransform: "uppercase" }}>Police :</span>
+                            <select
+                              value={selectedFont}
+                              onChange={(e) => setSelectedFont(e.target.value)}
+                              style={{
+                                background: "#120e26", color: "#FFF", border: `1px solid ${C.border}`,
+                                borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none",
+                                fontWeight: 600, cursor: "pointer"
+                              }}
+                            >
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Inter">Inter (Sans)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Poppins">Poppins (Rond)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Lora">Lora (Serif)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Playfair">Playfair (Classique)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Outfit">Outfit (Moderne)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="Roboto">Roboto (Pro)</option>
+                              <option style={{ background: "#120e26", color: "#FFF" }} value="FiraCode">Fira Code (Tech)</option>
+                            </select>
+                          </div>
                         </div>
 
                         <div style={{ display: "flex", gap: 8 }}>
@@ -3244,10 +3200,13 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                         overflowY: "auto",
                       }}>
                         <div id="cv-preview-print" style={{ background: "#ffffff" }}>
-                          {selectedTemplate === "corporate" && <CorporateTemplate cv={cvProfile} infos={infos} />}
-                          {selectedTemplate === "minimalist" && <MinimalistTemplate cv={cvProfile} infos={infos} />}
-                          {selectedTemplate === "creative" && <CreativeTemplate cv={cvProfile} infos={infos} />}
-                          {selectedTemplate === "tech" && <TechTemplate cv={cvProfile} infos={infos} />}
+                          <div className={`font-override-${selectedFont}`} style={{ minHeight: "100%" }}>
+                            {(() => {
+                              const tpl = CV_TEMPLATES.find(t => t.id === selectedTemplate) || CV_TEMPLATES[0];
+                              const Comp = tpl.component;
+                              return <Comp cv={cvProfile} infos={infos} photoUrl={photoUrl} />;
+                            })()}
+                          </div>
                         </div>
                       </div>
 
@@ -3259,6 +3218,319 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ TEMPLATES GALLERY VIEW ═══ */}
+        {activeView === "templates" && (
+          <div style={{ maxWidth: 1200, margin: "0 auto", padding: "26px 20px" }} className="slide">
+            <div style={{ marginBottom: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h1 style={{ fontSize: 24, fontWeight: 800, color: C.accent, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                  🎨 Galerie des Modèles & Templates
+                </h1>
+                <p style={{ fontSize: 13, color: C.muted }}>
+                  Choisis parmi nos 15 modèles de CV et 10 modèles de lettres de motivation de qualité supérieure.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", background: C.panel, padding: "4px 8px", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>POLICE :</span>
+                  <select
+                    value={selectedFont}
+                    onChange={(e) => setSelectedFont(e.target.value)}
+                    style={{
+                      background: "#120e26", color: "#FFF", border: `1px solid ${C.border}`,
+                      borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none",
+                      fontWeight: 600, cursor: "pointer"
+                    }}
+                  >
+                    <option style={{ background: "#120e26", color: "#FFF" }} value="Inter">Inter (Sans)</option>
+                    <option style={{ background: "#120e26", color: "#FFF" }} value="Poppins">Poppins (Rond)</option>
+                    <option style={{ background: "#120e26", color: "#FFF" }} value="Lora">Lora (Serif)</option>
+                    <option style={{ background: "#120e26", color: "#FFF" }} value="Playfair">Playfair (Classique)</option>
+                    <option style={{ background: "#120e26", color: "#FFF" }} value="Outfit">Outfit (Moderne)</option>
+                    <option style={{ background: "#120e26", color: "#FFF" }} value="Roboto">Roboto (Pro)</option>
+                    <option style={{ background: "#120e26", color: "#FFF" }} value="FiraCode">Fira Code (Tech)</option>
+                  </select>
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => { setActiveTab("cv"); }}
+                    style={{
+                      background: activeTab === "cv" ? C.accent : C.bg,
+                      border: `1px solid ${activeTab === "cv" ? "transparent" : C.border}`,
+                      color: activeTab === "cv" ? "#000" : C.text,
+                      padding: "8px 16px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer"
+                    }}
+                  >
+                    📄 CVs (15)
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab("lettre"); }}
+                    style={{
+                      background: activeTab === "lettre" ? C.accent : C.bg,
+                      border: `1px solid ${activeTab === "lettre" ? "transparent" : C.border}`,
+                      color: activeTab === "lettre" ? "#000" : C.text,
+                      padding: "8px 16px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer"
+                    }}
+                  >
+                    ✉️ Lettres (10)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {activeTab === "cv" ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 24 }}>
+                {CV_TEMPLATES.map(tpl => {
+                  const Comp = tpl.component;
+                  const isSelected = selectedTemplate === tpl.id;
+
+                  const fallbackInfos = {
+                    prenom: infos.prenom || "Marie",
+                    nom: infos.nom || "Laurent",
+                    titre: infos.titre || "Ingénieure Full-Stack",
+                    ville: infos.ville || "Paris",
+                    email: infos.email || "marie.laurent@email.com",
+                    tel: infos.tel || "06 12 34 56 78",
+                  };
+
+                  // fallback dummy data matching actual template prop expectations
+                  const dummyCv = cvProfile || {
+                    titre: "Ingénieure Full-Stack & Cloud",
+                    profil: "Développeuse passionnée avec 6 ans d'expérience en conception d'applications web modernes. Expertise React, Node.js et architectures cloud AWS. Certifiée AWS Solutions Architect.",
+                    identite: {
+                      email: fallbackInfos.email,
+                      telephone: fallbackInfos.tel,
+                      ville: fallbackInfos.ville,
+                      linkedin: "linkedin.com/in/marie-laurent",
+                    },
+                    experiences: [
+                      { poste: "Lead Développeuse Full-Stack", entreprise: "TechVision", dates: "2022 – Présent", lieu: "Paris", details: "Pilotage technique d'une équipe de 5 développeurs. Refonte complète de l'architecture front-end React.", bullets: ["Migration vers Next.js 14 — amélioration des performances de 40%", "Mise en place CI/CD GitHub Actions + déploiement AWS ECS"] },
+                      { poste: "Développeuse Full-Stack", entreprise: "DataSphere", dates: "2019 – 2022", lieu: "Lyon", details: "Développement d'applications SaaS B2B en React & Node.js.", bullets: ["Conception d'une API RESTful servant 50k requêtes/jour", "Intégration de systèmes de paiement Stripe & PayPal"] },
+                    ],
+                    formations: [
+                      { diplome: "Master Informatique", ecole: "EPITA Paris", dates: "2017 – 2019", lieu: "Paris" },
+                      { diplome: "AWS Solutions Architect", ecole: "Amazon Web Services", dates: "2023" },
+                    ],
+                    competences: {
+                      finance: "React, Next.js, Node.js, TypeScript, Python",
+                      outils: "AWS, Docker, Kubernetes, Git, PostgreSQL",
+                      langues: "Français (Natif), Anglais (C1)",
+                      interets: "Open Source, Randonnée, Photographie",
+                    },
+                  };
+
+                  return (
+                    <Card
+                      key={tpl.id}
+                      style={{
+                        padding: 12,
+                        position: "relative",
+                        border: isSelected ? `2.5px solid ${C.accent}` : `1px solid ${C.border}`,
+                        borderRadius: 14,
+                        overflow: "hidden",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 10,
+                        background: C.card,
+                        transition: "transform 0.3s ease, box-shadow 0.3s ease"
+                      }}
+                    >
+                      {/* Premium / Selected Badge */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
+                          {tpl.name}
+                        </span>
+                        {tpl.premium && (
+                          <span style={{
+                            background: "linear-gradient(135deg, #FFD700, #FFA500)",
+                            color: "#000",
+                            fontSize: 9,
+                            fontWeight: 800,
+                            padding: "2px 6px",
+                            borderRadius: 6,
+                            letterSpacing: "0.05em"
+                          }}>
+                            ✦ PREMIUM
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Scaled preview frame */}
+                      <div style={{
+                        width: "100%",
+                        height: 340,
+                        overflow: "hidden",
+                        borderRadius: 8,
+                        background: "#fff",
+                        border: "1px solid rgba(0,0,0,0.1)",
+                        position: "relative",
+                        cursor: "pointer"
+                      }}
+                        onClick={() => {
+                          setPreviewingTemplate({ type: "cv", template: tpl });
+                        }}
+                      >
+                        <div style={{
+                          transform: "scale(0.31)",
+                          transformOrigin: "top left",
+                          width: "794px",
+                          minHeight: "1123px",
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          pointerEvents: "none"
+                        }}>
+                          <Comp cv={dummyCv} infos={fallbackInfos} photoUrl={photoUrl} />
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => {
+                            setPreviewingTemplate({ type: "cv", template: tpl });
+                          }}
+                          style={{
+                            flex: 1,
+                            background: "rgba(168, 85, 247, 0.12)",
+                            color: C.purple,
+                            border: `1px solid ${C.purple}44`,
+                            fontWeight: 700,
+                            fontSize: 11.5,
+                            padding: "8px 0",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            textAlign: "center",
+                            transition: "all 0.18s"
+                          }}
+                        >
+                          👁️ Aperçu
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedTemplate(tpl.id);
+                            setActiveView("builder");
+                          }}
+                          style={{
+                            flex: 1.2,
+                            background: isSelected ? C.green + "20" : C.accent,
+                            color: isSelected ? C.green : "#000",
+                            border: isSelected ? `1px solid ${C.green}` : "none",
+                            fontWeight: 700,
+                            fontSize: 11.5,
+                            padding: "8px 0",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            textAlign: "center"
+                          }}
+                        >
+                          {isSelected ? "✓ Actif" : "⚡ Choisir"}
+                        </button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 24 }}>
+                {LETTER_TEMPLATES.map(tpl => {
+                  const Comp = tpl.component;
+                  const isSelected = selectedLetterTemplate === tpl.id;
+                  const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+                  const dummyText = lettre || "Madame, Monsieur,\n\nC'est avec un vif intérêt que je vous adresse ma candidature. Ayant suivi avec attention le développement de vos projets innovants, je suis convaincue que mes compétences sauront s'intégrer parfaitement.\n\nMon parcours m'a permis de développer une expertise solide et de mener à bien des projets d'envergure. Motivée et rigoureuse, je souhaite aujourd'hui mettre mon enthousiasme à votre service.\n\nJe reste à votre entière disposition pour convenir d'un entretien.\n\nJe vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.";
+                  const dummyLetterBody = renderLetterBody(dummyText);
+                  return (
+                    <Card
+                      key={tpl.id}
+                      style={{
+                        padding: 12,
+                        border: isSelected ? `2.5px solid ${C.accent}` : `1px solid ${C.border}`,
+                        borderRadius: 14, overflow: "hidden",
+                        display: "flex", flexDirection: "column", gap: 10,
+                        background: C.card,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{tpl.name}</span>
+                        {tpl.premium && (
+                          <span style={{ background: "linear-gradient(135deg, #FFD700, #FFA500)", color: "#000", fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 6 }}>✦ PREMIUM</span>
+                        )}
+                      </div>
+                      <div
+                        style={{ width: "100%", height: 340, overflow: "hidden", borderRadius: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.1)", position: "relative", cursor: "pointer" }}
+                        onClick={() => {
+                          setPreviewingTemplate({ type: "letter", template: tpl });
+                        }}
+                      >
+                        <div style={{ transform: "scale(0.31)", transformOrigin: "top left", width: "794px", minHeight: "1123px", position: "absolute", top: 0, left: 0, pointerEvents: "none", background: "#fff", padding: "60px 50px", boxSizing: "border-box" }}>
+                          <Comp
+                            body={dummyLetterBody}
+                            senderName={`${infos.prenom || "Marie"} ${infos.nom || "Laurent"}`}
+                            senderEmail={infos.email || "marie.laurent@email.com"}
+                            senderTel={infos.tel || "06 12 34 56 78"}
+                            senderVille={infos.ville || "Paris"}
+                            destEntreprise={analyse?.entreprise || "TechCorp Innovations"}
+                            destPoste={analyse?.poste || "Ingénieure Full-Stack"}
+                            destLieu={analyse?.lieu || "Paris"}
+                            objet={objetLettre || "Candidature au poste d'Ingénieure Solutions"}
+                            dateStr={dateStr}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => {
+                            setPreviewingTemplate({ type: "letter", template: tpl });
+                          }}
+                          style={{
+                            flex: 1,
+                            background: "rgba(168, 85, 247, 0.12)",
+                            color: C.purple,
+                            border: `1px solid ${C.purple}44`,
+                            fontWeight: 700,
+                            fontSize: 11.5,
+                            padding: "8px 0",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            textAlign: "center",
+                            transition: "all 0.18s"
+                          }}
+                        >
+                          👁️ Aperçu
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedLetterTemplate(tpl.id);
+                            setActiveView("builder");
+                          }}
+                          style={{
+                            flex: 1.2,
+                            background: isSelected ? C.green + "20" : C.accent,
+                            color: isSelected ? C.green : "#000",
+                            border: isSelected ? `1px solid ${C.green}` : "none",
+                            fontWeight: 700,
+                            fontSize: 11.5,
+                            padding: "8px 0",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            textAlign: "center"
+                          }}
+                        >
+                          {isSelected ? "✓ Actif" : "⚡ Choisir"}
+                        </button>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -3635,6 +3907,206 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
           </div>
         )}
 
+        {/* ═══ TEMPLATE PREVIEW MODAL ═══ */}
+        {previewingTemplate && (() => {
+          const { type, template } = previewingTemplate;
+          const Comp = template.component;
+          const isSelected = type === "cv" ? selectedTemplate === template.id : selectedLetterTemplate === template.id;
+
+          // Dummy Data / Previews
+          const fallbackInfos = {
+            prenom: infos.prenom || "Marie",
+            nom: infos.nom || "Laurent",
+            titre: infos.titre || "Ingénieure Full-Stack",
+            ville: infos.ville || "Paris",
+            email: infos.email || "marie.laurent@email.com",
+            tel: infos.tel || "06 12 34 56 78",
+          };
+
+          const dummyCv = cvProfile || {
+            titre: "Ingénieure Full-Stack & Cloud",
+            profil: "Développeuse passionnée avec 6 ans d'expérience en conception d'applications web modernes. Expertise React, Node.js et architectures cloud AWS. Certifiée AWS Solutions Architect.",
+            identite: {
+              email: fallbackInfos.email,
+              telephone: fallbackInfos.tel,
+              ville: fallbackInfos.ville,
+              linkedin: "linkedin.com/in/marie-laurent",
+            },
+            experiences: [
+              { poste: "Lead Développeuse Full-Stack", entreprise: "TechVision", dates: "2022 – Présent", lieu: "Paris", details: "Pilotage technique d'une équipe de 5 développeurs. Refonte complète de l'architecture front-end React.", bullets: ["Migration vers Next.js 14 — amélioration des performances de 40%", "Mise en place CI/CD GitHub Actions + déploiement AWS ECS"] },
+              { poste: "Développeuse Full-Stack", entreprise: "DataSphere", dates: "2019 – 2022", lieu: "Lyon", details: "Développement d'applications SaaS B2B en React & Node.js.", bullets: ["Conception d'une API RESTful servant 50k requêtes/jour", "Intégration de systèmes de paiement Stripe & PayPal"] },
+            ],
+            formations: [
+              { diplome: "Master Informatique", ecole: "EPITA Paris", dates: "2017 – 2019", lieu: "Paris" },
+              { diplome: "AWS Solutions Architect", ecole: "Amazon Web Services", dates: "2023" },
+            ],
+            competences: {
+              finance: "React, Next.js, Node.js, TypeScript, Python",
+              outils: "AWS, Docker, Kubernetes, Git, PostgreSQL",
+              langues: "Français (Natif), Anglais (C1)",
+              interets: "Open Source, Randonnée, Photographie",
+            },
+          };
+
+          const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+          const dummyText = lettre || "Madame, Monsieur,\n\nC'est avec un vif intérêt que je vous adresse ma candidature. Ayant suivi avec attention le développement de vos projets innovants, je suis convaincue que mes compétences sauront s'intégrer parfaitement.\n\nMon parcours m'a permis de développer une expertise solide et de mener à bien des projets d'envergure. Motivée et rigoureuse, je souhaite aujourd'hui mettre mon enthousiasme à votre service.\n\nJe reste à votre entière disposition pour convenir d'un entretien.\n\nJe vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.";
+          const dummyLetterBody = renderLetterBody(dummyText);
+
+          return (
+            <div className="m-overlay" onClick={() => setPreviewingTemplate(null)} style={{ zIndex: 1200 }}>
+              <div 
+                className="m-content" 
+                onClick={e => e.stopPropagation()} 
+                style={{ 
+                  maxWidth: 950, 
+                  height: "90vh",
+                  background: "rgba(10, 8, 22, 0.95)",
+                  border: `1px solid ${C.accent}40`,
+                  boxShadow: `0 24px 64px rgba(0, 240, 255, 0.15)`
+                }}
+              >
+                {/* Modal Header */}
+                <div style={{
+                  padding: "16px 24px", 
+                  borderBottom: `1px solid ${C.border}`,
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "space-between",
+                }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: C.text, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>🎨 Aperçu du modèle :</span>
+                      <span style={{ color: C.accent }}>{template.name}</span>
+                      {template.premium && (
+                        <span style={{
+                          background: "linear-gradient(135deg, #FFD700, #FFA500)",
+                          color: "#000",
+                          fontSize: 9,
+                          fontWeight: 800,
+                          padding: "2px 6px",
+                          borderRadius: 6,
+                          letterSpacing: "0.05em"
+                        }}>
+                          ✦ PREMIUM
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                      {type === "cv" ? "Modèle de Curriculum Vitae (A4)" : "Modèle de Lettre de Motivation (A4)"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setPreviewingTemplate(null)}
+                    style={{
+                      background: "transparent",
+                      border: `1px solid ${C.border}`,
+                      color: C.muted,
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      fontSize: 14,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.red; e.currentTarget.style.color = C.red; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Modal Body: Scaled rendering area */}
+                <div style={{
+                  flex: 1,
+                  overflowY: "auto",
+                  padding: "24px",
+                  display: "flex",
+                  justifyContent: "center",
+                  background: "#080612",
+                }}>
+                  {/* Container that acts as the sheet of paper */}
+                  <div style={{
+                    width: "794px",
+                    minHeight: "1123px",
+                    background: "#FFFFFF",
+                    boxShadow: "0 15px 45px rgba(0,0,0,0.5)",
+                    transformOrigin: "top center",
+                    borderRadius: 4,
+                    overflow: "hidden",
+                    position: "relative"
+                  }}>
+                    <div className={`font-override-${selectedFont}`} style={{ minHeight: "100%" }}>
+                      {type === "cv" ? (
+                        <Comp cv={dummyCv} infos={fallbackInfos} photoUrl={photoUrl} />
+                      ) : (
+                        <div style={{ background: "#fff", padding: "60px 50px", minHeight: "1123px", boxSizing: "border-box" }}>
+                          <Comp
+                            body={dummyLetterBody}
+                            senderName={`${infos.prenom || "Marie"} ${infos.nom || "Laurent"}`}
+                            senderEmail={infos.email || "marie.laurent@email.com"}
+                            senderTel={infos.tel || "06 12 34 56 78"}
+                            senderVille={infos.ville || "Paris"}
+                            destEntreprise={analyse?.entreprise || "TechCorp Innovations"}
+                            destPoste={analyse?.poste || "Ingénieure Full-Stack"}
+                            destLieu={analyse?.lieu || "Paris"}
+                            objet={objetLettre || "Candidature au poste d'Ingénieure Solutions"}
+                            dateStr={dateStr}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div style={{
+                  padding: "16px 24px",
+                  borderTop: `1px solid ${C.border}`,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 12,
+                  background: "rgba(13, 11, 28, 0.9)"
+                }}>
+                  <Btn onClick={() => setPreviewingTemplate(null)} color={C.muted}>
+                    Fermer
+                  </Btn>
+                  <button
+                    onClick={() => {
+                      if (type === "cv") {
+                        setSelectedTemplate(template.id);
+                      } else {
+                        setSelectedLetterTemplate(template.id);
+                      }
+                      setPreviewingTemplate(null);
+                      setActiveView("builder");
+                    }}
+                    style={{
+                      background: isSelected ? C.green + "20" : `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
+                      color: isSelected ? C.green : "#fff",
+                      border: isSelected ? `1px solid ${C.green}` : "none",
+                      borderRadius: 9,
+                      padding: "10px 24px",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      boxShadow: isSelected ? "none" : `0 4px 15px ${C.accent}40`,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {isSelected ? "✓ Modèle Actuel" : "Utiliser ce modèle"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Sliding Gmail Sync Panel */}
         {showGmailPanel && (
           <div style={{
@@ -3780,10 +4252,10 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
 
                     {showGmailConfig && (
                       <div style={{ marginTop: 8, fontSize: 10, color: C.muted, lineHeight: 1.4, background: "#0C0F1A", padding: 10, borderRadius: 6, border: `1px dashed ${C.border}` }}>
-                        1. Activez la <strong>Validation en 2 étapes</strong> dans la sécurité de votre compte Google.<br/>
-                        2. Ouvrez <a href="https://myaccount.google.com/security" target="_blank" rel="noopener noreferrer" style={{ color: C.accent, textDecoration: "underline" }}>Mon Compte Google &gt; Sécurité</a>.<br/>
-                        3. Recherchez <strong>Mots de passe d'application</strong>.<br/>
-                        4. Générez un code (ex: "CRM Candidatures") et copiez les 16 lettres.<br/>
+                        1. Activez la <strong>Validation en 2 étapes</strong> dans la sécurité de votre compte Google.<br />
+                        2. Ouvrez <a href="https://myaccount.google.com/security" target="_blank" rel="noopener noreferrer" style={{ color: C.accent, textDecoration: "underline" }}>Mon Compte Google &gt; Sécurité</a>.<br />
+                        3. Recherchez <strong>Mots de passe d'application</strong>.<br />
+                        4. Générez un code (ex: "CRM Candidatures") et copiez les 16 lettres.<br />
                         5. Saisissez-les dans le champ ci-dessus.
                       </div>
                     )}
@@ -3791,133 +4263,133 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                 )}
               </div>
 
-                  {/* Message & Errors */}
-                  {gmailError && (
-                    <div style={{
-                      background: C.red + "15", border: `1px solid ${C.red}44`,
-                      borderRadius: 8, padding: "10px 14px", color: C.red, fontSize: 12
-                    }}>
-                      ⚠️ {gmailError}
-                    </div>
+              {/* Message & Errors */}
+              {gmailError && (
+                <div style={{
+                  background: C.red + "15", border: `1px solid ${C.red}44`,
+                  borderRadius: 8, padding: "10px 14px", color: C.red, fontSize: 12
+                }}>
+                  ⚠️ {gmailError}
+                </div>
+              )}
+              {gmailMessage && !gmailError && (
+                <div style={{
+                  background: C.accent + "15", border: `1px solid ${C.accent}44`,
+                  borderRadius: 8, padding: "10px 14px", color: C.accent, fontSize: 11,
+                  fontFamily: "'DM Mono',monospace"
+                }}>
+                  ℹ️ {gmailMessage}
+                </div>
+              )}
+
+              {/* Sync results */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>
+                    📩 Candidatures détectées ({gmailEmails.length})
+                  </span>
+                  {gmailEmails.length > 0 && (
+                    <button
+                      onClick={importAllGmailCandidatures}
+                      style={{
+                        background: C.green + "20", border: `1px solid ${C.green}44`,
+                        color: C.green, fontSize: 11, padding: "4px 10px",
+                        borderRadius: 6, cursor: "pointer", fontWeight: 600
+                      }}
+                    >🚀 Tout importer</button>
                   )}
-                  {gmailMessage && !gmailError && (
-                    <div style={{
-                      background: C.accent + "15", border: `1px solid ${C.accent}44`,
-                      borderRadius: 8, padding: "10px 14px", color: C.accent, fontSize: 11,
-                      fontFamily: "'DM Mono',monospace"
-                    }}>
-                      ℹ️ {gmailMessage}
-                    </div>
-                  )}
+                </div>
 
-                  {/* Sync results */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>
-                        📩 Candidatures détectées ({gmailEmails.length})
-                      </span>
-                      {gmailEmails.length > 0 && (
-                        <button
-                          onClick={importAllGmailCandidatures}
-                          style={{
-                            background: C.green + "20", border: `1px solid ${C.green}44`,
-                            color: C.green, fontSize: 11, padding: "4px 10px",
-                            borderRadius: 6, cursor: "pointer", fontWeight: 600
-                          }}
-                        >🚀 Tout importer</button>
-                      )}
-                    </div>
-
-                    {gmailEmails.length === 0 ? (
-                      <div style={{
-                        textAlign: "center", padding: "40px 20px", color: C.dim,
-                        border: `1px dashed ${C.border}`, borderRadius: 12, fontSize: 12
-                      }}>
-                        {gmailSyncing ? "Analyse IA des emails du libellé..." : "Aucune candidature en attente d'import. Cliquez sur Synchroniser pour interroger Gmail."}
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {gmailEmails.map(email => {
-                          const statCol = STATUT_COLORS[email.statut_suggere] || C.accent;
-                          return (
-                            <div key={email.emailId} style={{
-                              background: C.card, border: `1px solid ${C.border}`,
-                              borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 10,
-                              position: "relative"
-                            }}>
-                              {/* Top row */}
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>
-                                    {email.entreprise || "Entreprise inconnue"}
-                                  </div>
-                                  <div style={{ fontSize: 12.5, fontWeight: 500, color: C.muted }}>
-                                    {email.poste || "Poste non spécifié"}
-                                  </div>
-                                </div>
-                                <span style={{
-                                  background: statCol + "20", color: statCol,
-                                  fontSize: 10, padding: "2px 8px", borderRadius: 10,
-                                  fontWeight: 700, textTransform: "uppercase"
-                                }}>{email.statut_suggere}</span>
+                {gmailEmails.length === 0 ? (
+                  <div style={{
+                    textAlign: "center", padding: "40px 20px", color: C.dim,
+                    border: `1px dashed ${C.border}`, borderRadius: 12, fontSize: 12
+                  }}>
+                    {gmailSyncing ? "Analyse IA des emails du libellé..." : "Aucune candidature en attente d'import. Cliquez sur Synchroniser pour interroger Gmail."}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {gmailEmails.map(email => {
+                      const statCol = STATUT_COLORS[email.statut_suggere] || C.accent;
+                      return (
+                        <div key={email.emailId} style={{
+                          background: C.card, border: `1px solid ${C.border}`,
+                          borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 10,
+                          position: "relative"
+                        }}>
+                          {/* Top row */}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>
+                                {email.entreprise || "Entreprise inconnue"}
                               </div>
-
-                              {/* Details */}
-                              <div style={{ display: "flex", gap: 14, fontSize: 11, color: C.muted, flexWrap: "wrap" }}>
-                                {email.type_contrat && <span>📄 {email.type_contrat}</span>}
-                                {email.lieu && <span>📍 {email.lieu}</span>}
-                                <span>📅 {new Date(email.emailDate || email.date_email || Date.now()).toLocaleDateString("fr-FR")}</span>
-                              </div>
-
-                              {/* Summary / Snippet */}
-                              <div style={{
-                                background: C.bg, padding: "10px 12px", borderRadius: 8,
-                                fontSize: 11.5, color: C.muted, border: `1px solid ${C.border}`,
-                                lineHeight: 1.4
-                              }}>
-                                <strong>Résumé IA:</strong> {email.resume}
-                              </div>
-
-                              {/* Action required */}
-                              {email.action_requise && (
-                                <div style={{
-                                  background: C.gold + "15", border: `1px solid ${C.gold}44`,
-                                  borderRadius: 8, padding: "8px 12px", color: C.gold, fontSize: 11,
-                                  display: "flex", flexDirection: "column", gap: 2
-                                }}>
-                                  <strong>⚠️ Action requise:</strong> {email.action_requise}
-                                  {email.date_action && (
-                                    <span style={{ fontSize: 9.5, opacity: 0.8 }}>
-                                      📅 Échéance suggérée : {new Date(email.date_action).toLocaleDateString("fr-FR")}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Import Actions */}
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                                <span style={{ fontSize: 9.5, color: C.dim, fontFamily: "'DM Mono',monospace" }}>
-                                  De: {email.emailFrom?.split('<')[0]}
-                                </span>
-                                <button
-                                  onClick={() => importGmailCandidature(email)}
-                                  style={{
-                                    background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
-                                    color: "#fff", border: "none", borderRadius: 6,
-                                    padding: "6px 12px", fontSize: 11.5, fontWeight: 600,
-                                    cursor: "pointer", boxShadow: `0 4px 12px ${C.accent}30`
-                                  }}
-                                >✅ Importer dans le CRM</button>
+                              <div style={{ fontSize: 12.5, fontWeight: 500, color: C.muted }}>
+                                {email.poste || "Poste non spécifié"}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                            <span style={{
+                              background: statCol + "20", color: statCol,
+                              fontSize: 10, padding: "2px 8px", borderRadius: 10,
+                              fontWeight: 700, textTransform: "uppercase"
+                            }}>{email.statut_suggere}</span>
+                          </div>
+
+                          {/* Details */}
+                          <div style={{ display: "flex", gap: 14, fontSize: 11, color: C.muted, flexWrap: "wrap" }}>
+                            {email.type_contrat && <span>📄 {email.type_contrat}</span>}
+                            {email.lieu && <span>📍 {email.lieu}</span>}
+                            <span>📅 {new Date(email.emailDate || email.date_email || Date.now()).toLocaleDateString("fr-FR")}</span>
+                          </div>
+
+                          {/* Summary / Snippet */}
+                          <div style={{
+                            background: C.bg, padding: "10px 12px", borderRadius: 8,
+                            fontSize: 11.5, color: C.muted, border: `1px solid ${C.border}`,
+                            lineHeight: 1.4
+                          }}>
+                            <strong>Résumé IA:</strong> {email.resume}
+                          </div>
+
+                          {/* Action required */}
+                          {email.action_requise && (
+                            <div style={{
+                              background: C.gold + "15", border: `1px solid ${C.gold}44`,
+                              borderRadius: 8, padding: "8px 12px", color: C.gold, fontSize: 11,
+                              display: "flex", flexDirection: "column", gap: 2
+                            }}>
+                              <strong>⚠️ Action requise:</strong> {email.action_requise}
+                              {email.date_action && (
+                                <span style={{ fontSize: 9.5, opacity: 0.8 }}>
+                                  📅 Échéance suggérée : {new Date(email.date_action).toLocaleDateString("fr-FR")}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Import Actions */}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                            <span style={{ fontSize: 9.5, color: C.dim, fontFamily: "'DM Mono',monospace" }}>
+                              De: {email.emailFrom?.split('<')[0]}
+                            </span>
+                            <button
+                              onClick={() => importGmailCandidature(email)}
+                              style={{
+                                background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
+                                color: "#fff", border: "none", borderRadius: 6,
+                                padding: "6px 12px", fontSize: 11.5, fontWeight: 600,
+                                cursor: "pointer", boxShadow: `0 4px 12px ${C.accent}30`
+                              }}
+                            >✅ Importer dans le CRM</button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                )}
               </div>
-            )}
+            </div>
+          </div>
+        )}
 
         <div style={{
           borderTop: `1px solid ${C.border}`, padding: "11px 28px",
