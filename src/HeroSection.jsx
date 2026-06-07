@@ -16,7 +16,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
   }
 
   return (
-    <div className="relative min-height-screen bg-[var(--color-brand-bg)] overflow-hidden font-sans select-none">
+    <div className="relative min-height-screen bg-slate-900 overflow-hidden font-sans select-none">
       
       {/* ── Background Blurred Blobs ── */}
       <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] bg-[var(--color-brand-pink-blob)] rounded-full blur-[110px] pointer-events-none z-0"></div>
@@ -50,7 +50,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
               <circle cx="30" cy="30" r="3.5" fill="#FF4A70" />
             </svg>
             <div className="flex flex-col">
-              <span className="font-bold text-[28px] tracking-wider text-[var(--color-brand-dark)] leading-none" style={{ fontFamily: "'Orbitron', sans-serif" }}>
+              <span className="font-bold text-[28px] tracking-wider text-white leading-none" style={{ fontFamily: "'Orbitron', sans-serif" }}>
                 MIKA
               </span>
               <span className="text-[8.5px] font-light text-[var(--color-brand-purple)] tracking-[3.5px] mt-1 uppercase leading-none" style={{ fontFamily: "'Orbitron', sans-serif" }}>
@@ -68,7 +68,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
                   key={item.name}
                   onClick={() => onNavigate && onNavigate(item.view)}
                   className={`relative font-semibold text-[15px] transition-all hover:text-[var(--color-brand-purple)] flex items-center gap-0.5 cursor-pointer ${
-                    isActive ? "text-[var(--color-brand-dark)]" : "text-gray-500/90"
+                    isActive ? "text-white" : "text-gray-500/90"
                   }`}
                 >
                   {item.name}
@@ -240,7 +240,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
           
           {/* Left Column: Typography & CTAs */}
           <div className="flex flex-col gap-6 lg:gap-8 text-left max-w-xl">
-            <h1 className="text-[42px] md:text-[54px] lg:text-[62px] font-extrabold text-[var(--color-brand-dark)] leading-[1.08] tracking-tight">
+            <h1 className="text-[42px] md:text-[54px] lg:text-[62px] font-extrabold text-white leading-[1.08] tracking-tight">
               Apply smarter. <br />
               <span className="bg-gradient-to-r from-[#00b4d8] to-[#0077B6] bg-clip-text text-transparent">Get hired faster.</span>
             </h1>
@@ -271,7 +271,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </span>
-                <span className="text-sm font-bold text-[var(--color-brand-dark)]">
+                <span className="text-sm font-bold text-white">
                   Play Intro
                 </span>
               </button>
@@ -286,7 +286,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
 
             {/* Illustration Image (without frame/container) */}
             <img
-              src="/swipy-hero.png"
+              src="/avatar.jpeg"
               alt="MIKA AI Career Assistant Illustration"
               className="relative z-10 w-full max-w-[480px] h-auto rounded-[32px] shadow-[0_20px_50px_rgba(112,38,232,0.2)] hover:scale-[1.02] transition-transform duration-700 ease-out object-cover"
             />
@@ -298,7 +298,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
         <section className="py-12 border-t border-gray-100/50 mt-6 z-10 relative">
           {/* Section title & Stats */}
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <h2 className="text-2xl md:text-3xl font-extrabold text-[var(--color-brand-dark)] mb-4">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
               Ce que disent nos utilisateurs
             </h2>
             <p className="text-sm text-gray-500 font-medium">
@@ -326,12 +326,12 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
             {/* Card 1 */}
-            <div className="p-6 rounded-2xl bg-white/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
+            <div className="p-6 rounded-2xl bg-slate-800/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
               <div>
                 <div className="flex items-center gap-1 text-amber-400 mb-3.5">
                   {"★".repeat(5)}
                 </div>
-                <p className="text-xs text-gray-600 leading-relaxed font-medium mb-6">
+                <p className="text-xs text-gray-300 leading-relaxed font-medium mb-6">
                   "Grâce à l'analyse ATS ultra-précise de MIKA, j'ai pu identifier les mots-clés manquants sur mon profil et décrocher mon entretien chez TechVision en 48 heures !"
                 </p>
               </div>
@@ -340,19 +340,19 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
                   ML
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-[var(--color-brand-dark)]">Marie Laurent</h4>
+                  <h4 className="text-xs font-bold text-white">Marie Laurent</h4>
                   <span className="text-[10px] text-gray-400 font-medium">Développeuse Full-Stack</span>
                 </div>
               </div>
             </div>
 
             {/* Card 2 */}
-            <div className="p-6 rounded-2xl bg-white/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
+            <div className="p-6 rounded-2xl bg-slate-800/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
               <div>
                 <div className="flex items-center gap-1 text-amber-400 mb-3.5">
                   {"★".repeat(5)}
                 </div>
-                <p className="text-xs text-gray-600 leading-relaxed font-medium mb-6">
+                <p className="text-xs text-gray-300 leading-relaxed font-medium mb-6">
                   "Le générateur de lettre de motivation est tout simplement magique. Il s'adapte parfaitement au ton de l'annonce et fait ressortir mes points forts sans effort."
                 </p>
               </div>
@@ -361,19 +361,19 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
                   TM
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-[var(--color-brand-dark)]">Thomas Martin</h4>
+                  <h4 className="text-xs font-bold text-white">Thomas Martin</h4>
                   <span className="text-[10px] text-gray-400 font-medium">Product Manager</span>
                 </div>
               </div>
             </div>
 
             {/* Card 3 */}
-            <div className="p-6 rounded-2xl bg-white/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
+            <div className="p-6 rounded-2xl bg-slate-800/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
               <div>
                 <div className="flex items-center gap-1 text-amber-400 mb-3.5">
                   {"★".repeat(5)}
                 </div>
-                <p className="text-xs text-gray-600 leading-relaxed font-medium mb-6">
+                <p className="text-xs text-gray-300 leading-relaxed font-medium mb-6">
                   "Le CRM de suivi des candidatures change tout. Plus d'oubli de relance à J+7 grâce aux notifications et aux rappels automatisés. C'est mon assistant idéal."
                 </p>
               </div>
@@ -382,7 +382,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
                   SB
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-[var(--color-brand-dark)]">Sara Benali</h4>
+                  <h4 className="text-xs font-bold text-white">Sara Benali</h4>
                   <span className="text-[10px] text-gray-400 font-medium">Consultante RH</span>
                 </div>
               </div>
