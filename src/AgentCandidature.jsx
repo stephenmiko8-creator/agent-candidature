@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { supabase } from "./supabaseClient";
 import {
   CV_TEMPLATES,
   LETTER_TEMPLATES
@@ -307,10 +308,12 @@ const StepBar = ({ current }) => {
 };
 
 // ── Backend IA API ─────────────────────────────────────────────────────────────
-async function callClaude(system, user) {
+async function callClaude(system, user, token) {
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch("/api/claude", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ system, user }),
   });
 
@@ -373,7 +376,7 @@ function calculateATSScore(analyse, lettre, cvProfile) {
   return Math.min(rawScore, 100);
 }
 
-async function genererSuggestionsATS({ missingKeywords, cvProfile, offre }) {
+async function genererSuggestionsATS({ missingKeywords, cvProfile, offre }, token) {
   if (!missingKeywords || missingKeywords.length === 0) return { suggestions: [] };
   const system = `Tu es un expert RH et ATS. Le candidat a des mots-clés ATS manquants dans sa candidature (CV + lettre) pour l'offre suivante.
 
@@ -424,11 +427,11 @@ ${JSON.stringify(cvProfile)}
 OFFRE D'EMPLOI :
 ${offre}`;
 
-  const r = await callClaude(system, user);
+  const r = await callClaude(system, user, token);
   return safeJsonParse(r);
 }
 
-async function genererCandidatureComplete({ cvProfile, cvTexte, offre, infos, hasSavedProfile }) {
+async function genererCandidatureComplete({ cvProfile, cvTexte, offre, infos, hasSavedProfile }, token) {
   const system = `Tu es un agent expert RH, ATS, spécialisé dans le domaine du poste ciblé et dans la rédaction de candidatures françaises premium.
 Tu dois faire tout le traitement en UN SEUL APPEL et retourner uniquement un JSON strict valide, sans markdown.
 
@@ -679,8 +682,12 @@ export default function AgentCandidature({
   onNavigate,
   onSearch,
   selectedCandidatureId,
-  clearSelectedCandidatureId
+  clearSelectedCandidatureId,
+  user,
+  token,
+  onLogout
 }) {
+  const isAdmin = user?.email === "renaudmiko90@gmail.com";
   const [step, setStep] = useState(0);
   const [offre, setOffre] = useState("");
   const [cvTexte, setCvTexte] = useState("");
@@ -726,9 +733,11 @@ export default function AgentCandidature({
     setChatLoading(true);
 
     try {
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch("/api/chatbot", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ prompt: text })
       });
       const data = await res.json();
@@ -793,48 +802,150 @@ export default function AgentCandidature({
     }
   }, [selectedCandidatureId, candidatures, clearSelectedCandidatureId]);
 
-  const getUserKey = () => `cvProfile_${infos.email || "default"}`;
-  const loadedEmailRef = useRef(infos.email);
-
-  // Load profile from localStorage when email changes or on mount
+  // Sync infos with authenticated user metadata
   useEffect(() => {
-    const key = getUserKey();
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setCvProfile(parsed);
-      } catch (e) {
-        console.error("Erreur chargement localStorage:", e);
-      }
-    } else {
-      setCvProfile(initialCvProfile);
+    if (user && user.email) {
+      setInfos(prev => ({
+        ...prev,
+        email: user.email,
+        prenom: user.user_metadata?.full_name ? user.user_metadata.full_name.split(" ")[0] : prev.prenom,
+        nom: user.user_metadata?.full_name ? user.user_metadata.full_name.split(" ").slice(1).join(" ") : prev.nom,
+      }));
     }
-    loadedEmailRef.current = infos.email;
-  }, [infos.email]);
+  }, [user]);
 
-  // (Moved to top)
+  const getUserKey = () => `cvProfile_${user ? user.id : (infos.email || "default")}`;
+  const loadedEmailRef = useRef(user ? user.id : infos.email);
 
-  const getCandidaturesKey = () => `candidatures_${infos.email || "default"}`;
-
-  // Load candidatures from localStorage when email changes
+  // Load profile from Supabase/localStorage when user/email changes or on mount
   useEffect(() => {
-    const key = getCandidaturesKey();
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      try {
-        setCandidatures(JSON.parse(saved));
-      } catch (e) {
-        console.error("Erreur chargement candidatures:", e);
+    const fetchProfile = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from("cv_profiles")
+            .select("profile_data")
+            .eq("id", user.id)
+            .single();
+          if (error && error.code !== "PGRST116") { // PGRST116 is "no rows returned"
+            throw error;
+          }
+          if (data && data.profile_data) {
+            setCvProfile(data.profile_data);
+            loadedEmailRef.current = user.id;
+            return;
+          }
+        } catch (dbErr) {
+          console.error("Erreur chargement profil DB, fallback localStorage:", dbErr);
+        }
       }
-    } else {
-      setCandidatures([]);
-    }
-  }, [infos.email]);
 
-  const saveCandidatures = (newList) => {
+      const key = getUserKey();
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setCvProfile(parsed);
+        } catch (e) {
+          console.error("Erreur chargement localStorage:", e);
+        }
+      } else {
+        setCvProfile(initialCvProfile);
+      }
+      loadedEmailRef.current = user ? user.id : infos.email;
+    };
+    fetchProfile();
+  }, [user, infos.email]);
+
+  const getCandidaturesKey = () => `candidatures_${user ? user.id : (infos.email || "default")}`;
+
+  // Load candidatures from Supabase/localStorage when user/email changes
+  useEffect(() => {
+    const fetchCandidatures = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from("candidatures")
+            .select("*")
+            .eq("user_id", user.id);
+          if (error) throw error;
+          if (data) {
+            const mapped = data.map(item => ({
+              id: item.id,
+              poste: item.poste,
+              entreprise: item.entreprise,
+              statut: item.statut,
+              lieu: item.lieu || "",
+              link: item.link || "",
+              description: item.description || "",
+              date: item.date || "",
+              contactName: item.contact_name || "",
+              contactEmail: item.contact_email || "",
+              scoreATS: item.score_ats || null,
+              lettreGeneree: item.lettre_generee || "",
+              objetLettreGeneree: item.objet_lettre_generee || "",
+              notes: item.notes || "",
+              reminders: item.reminders || [],
+              workflow: item.workflow || {},
+            }));
+            setCandidatures(mapped);
+            return;
+          }
+        } catch (dbErr) {
+          console.error("Erreur chargement DB candidatures, fallback localStorage:", dbErr);
+        }
+      }
+
+      const key = getCandidaturesKey();
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          setCandidatures(JSON.parse(saved));
+        } catch (e) {
+          console.error("Erreur chargement candidatures:", e);
+        }
+      } else {
+        setCandidatures([]);
+      }
+    };
+    fetchCandidatures();
+  }, [user, infos.email]);
+
+  const saveCandidatures = async (newList) => {
     setCandidatures(newList);
     localStorage.setItem(getCandidaturesKey(), JSON.stringify(newList));
+
+    if (user) {
+      try {
+        const rows = newList.map(item => ({
+          id: item.id,
+          user_id: user.id,
+          poste: item.poste || "",
+          entreprise: item.entreprise || "",
+          statut: item.statut || "Draft",
+          lieu: item.lieu || "",
+          link: item.link || "",
+          description: item.description || "",
+          date: item.date || "",
+          contact_name: item.contactName || "",
+          contact_email: item.contactEmail || "",
+          score_ats: item.scoreATS || null,
+          lettre_generee: item.lettreGeneree || "",
+          objet_lettre_generee: item.objetLettreGeneree || "",
+          notes: item.notes || "",
+          reminders: item.reminders || [],
+          workflow: item.workflow || {},
+          updated_at: new Date().toISOString()
+        }));
+
+        const { error } = await supabase
+          .from("candidatures")
+          .upsert(rows, { onConflict: "id" });
+        if (error) throw error;
+      } catch (dbErr) {
+        console.error("Erreur sauvegarde DB candidatures:", dbErr);
+      }
+    }
   };
 
   // Sync builder outputs (cover letter, ATS score) back to the matching CRM candidature
@@ -864,17 +975,37 @@ export default function AgentCandidature({
     saveCandidatures(updated);
   }, [lettre, atsScore, objetLettre]);
 
-  // Persist cvProfile state edits to localStorage
+  // Persist cvProfile state edits to localStorage and Supabase DB (debounced)
   useEffect(() => {
-    if (cvProfile && infos.email === loadedEmailRef.current) {
-      localStorage.setItem(getUserKey(), JSON.stringify(cvProfile));
+    const currentScope = user ? user.id : infos.email;
+    if (!cvProfile || currentScope !== loadedEmailRef.current) return;
+
+    localStorage.setItem(getUserKey(), JSON.stringify(cvProfile));
+
+    if (user) {
+      const delayDebounceFn = setTimeout(async () => {
+        try {
+          const { error } = await supabase
+            .from("cv_profiles")
+            .upsert({
+              id: user.id,
+              profile_data: cvProfile,
+              updated_at: new Date().toISOString()
+            }, { onConflict: "id" });
+          if (error) throw error;
+        } catch (dbErr) {
+          console.error("Erreur sauvegarde DB profil:", dbErr);
+        }
+      }, 1000);
+
+      return () => clearTimeout(delayDebounceFn);
     }
-  }, [cvProfile, infos.email]);
+  }, [cvProfile, user, infos.email]);
   // (Moved to top)
 
   const checkGmailAuthStatus = async () => {
     try {
-      const res = await fetch("/api/gmail/status");
+      const res = await fetch("/api/gmail/status", token ? { headers: { "Authorization": `Bearer ${token}` } } : {});
       const data = await res.json();
       setGmailAuthenticated(!!data.authenticated);
       setGmailEmail(data.email || "");
@@ -892,9 +1023,11 @@ export default function AgentCandidature({
       return;
     }
     try {
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch("/api/gmail/config", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ email: configEmail, appPassword: configAppPassword }),
       });
       const data = await res.json();
@@ -912,12 +1045,15 @@ export default function AgentCandidature({
 
   useEffect(() => {
     checkGmailAuthStatus();
-  }, []);
+  }, [token]);
 
   const disconnectGmail = async () => {
     if (!window.confirm("Déconnecter votre compte de messagerie de l'application ?")) return;
     try {
-      const res = await fetch("/api/gmail/disconnect", { method: "POST" });
+      const res = await fetch("/api/gmail/disconnect", {
+        method: "POST",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      });
       const data = await res.json();
       if (data.success) {
         setGmailAuthenticated(false);
@@ -935,7 +1071,7 @@ export default function AgentCandidature({
     setGmailError("");
     setGmailMessage("Synchronisation en cours, analyse IA de vos emails...");
     try {
-      const res = await fetch("/api/gmail/sync?max=15");
+      const res = await fetch("/api/gmail/sync?max=15", token ? { headers: { "Authorization": `Bearer ${token}` } } : {});
       if (res.status === 401) {
         setGmailAuthenticated(false);
         const errData = await res.json().catch(() => ({}));
@@ -1212,7 +1348,7 @@ export default function AgentCandidature({
         offre,
         infos,
         hasSavedProfile,
-      });
+      }, token);
 
       const ana = result.analyse || {};
       const opti = result.optimisation_cv || {};
@@ -1490,7 +1626,7 @@ ${opti.justification || ""}
 L'accroche doit être percutante, faire entre 3 et 4 lignes maximum, et mettre en valeur les compétences clés.
 RÈGLE STRICTE : Retourne UNIQUEMENT le texte de l'accroche optimisée. Sans commentaire, sans introduction, sans guillemets, sans markdown.`;
       const userPrompt = `OFFRE D'EMPLOI :\n${offre}\n\nACCROCHE ACTUELLE :\n${cvProfile.profil}`;
-      const resultText = await callClaude(systemPrompt, userPrompt);
+      const resultText = await callClaude(systemPrompt, userPrompt, token);
       if (resultText && resultText.trim()) {
         setCvProfile(prev => ({ ...prev, profil: resultText.trim() }));
       }
@@ -1572,7 +1708,7 @@ ${offre}
 
 Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
 
-      const result = await callClaude(systemPrompt, userPrompt);
+      const result = await callClaude(systemPrompt, userPrompt, token);
       const parsed = safeJsonParse(result);
       if (parsed.lettre && parsed.lettre.trim()) {
         setLettre(parsed.lettre.trim());
@@ -1623,7 +1759,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
         missingKeywords: missing,
         cvProfile,
         offre
-      });
+      }, token);
       setAtsSuggestions(res.suggestions || []);
     } catch (err) {
       console.error("Erreur génération suggestions ATS :", err);
@@ -1908,11 +2044,23 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
     if (sel && selectedCandidature?.id === id) setSelectedCandidature(sel);
   };
 
-  const deleteCandidature = (id) => {
+  const deleteCandidature = async (id) => {
     if (!window.confirm("Supprimer cette candidature de l'historique ?")) return;
     const updated = candidatures.filter(c => c.id !== id);
     saveCandidatures(updated);
     if (selectedCandidature?.id === id) setSelectedCandidature(null);
+
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from("candidatures")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+      } catch (dbErr) {
+        console.error("Erreur suppression candidature DB:", dbErr);
+      }
+    }
   };
 
   const addReminder = (candId) => {
@@ -2093,18 +2241,35 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
             </button>
             <div style={{ width: 1, height: 20, background: C.border }} />
 
-            <button
-              onClick={() => onNavigate && onNavigate("recruiter")}
-              style={{
-                background: "transparent",
-                border: `1px solid ${C.border}`,
-                color: C.muted,
-                padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
-                cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6
-              }}
-            >
-              🏢 Recruteur
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => onNavigate && onNavigate("recruiter")}
+                style={{
+                  background: "transparent",
+                  border: `1px solid ${C.border}`,
+                  color: C.muted,
+                  padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6
+                }}
+              >
+                🏢 Recruteur
+              </button>
+            )}
+
+            {user && (
+              <button
+                onClick={onLogout}
+                style={{
+                  background: "transparent",
+                  border: `1px solid ${C.red}44`,
+                  color: C.red,
+                  padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6
+                }}
+              >
+                🚪 Déconnexion
+              </button>
+            )}
 
             <div style={{ width: 1, height: 20, background: C.border }} />
 

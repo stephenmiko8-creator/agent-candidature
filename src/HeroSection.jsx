@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function HeroSection({ onNavigate, onSearch, currentView = "hero" }) {
+export default function HeroSection({ onNavigate, onSearch, currentView = "hero", isAdmin }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -11,6 +11,9 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
     { name: "About", view: "about", hasDropdown: false },
     { name: "Espace Recruteur", view: "recruiter", hasDropdown: false },
   ];
+  if (isAdmin) {
+    navItems.push({ name: "Admin Panel ⚙️", view: "admin", hasDropdown: false });
+  }
 
   return (
     <div className="relative min-height-screen bg-[var(--color-brand-bg)] overflow-hidden font-sans select-none">
@@ -290,6 +293,103 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
           </div>
 
         </main>
+
+        {/* ── Testimonials & Reviews Section ── */}
+        <section className="py-12 border-t border-gray-100/50 mt-6 z-10 relative">
+          {/* Section title & Stats */}
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-[var(--color-brand-dark)] mb-4">
+              Ce que disent nos utilisateurs
+            </h2>
+            <p className="text-sm text-gray-500 font-medium">
+              Rejoignez des milliers de candidats qui ont propulsé leur carrière avec MIKA.
+            </p>
+            
+            {/* Global Stats Grid */}
+            <div className="grid grid-cols-3 gap-4 mt-8">
+              <div className="p-4 rounded-2xl bg-white/40 border border-white/50 shadow-sm backdrop-blur-sm">
+                <div className="text-xl md:text-2xl font-black text-[#00b4d8]" style={{ fontFamily: "'Orbitron', sans-serif" }}>98.4%</div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Avis Positifs</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/40 border border-white/50 shadow-sm backdrop-blur-sm">
+                <div className="text-xl md:text-2xl font-black text-[#7026E8]" style={{ fontFamily: "'Orbitron', sans-serif" }}>1,500+</div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Candidats Recrutés</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/40 border border-white/50 shadow-sm backdrop-blur-sm">
+                <div className="text-xl md:text-2xl font-black text-[#FF4A70]" style={{ fontFamily: "'Orbitron', sans-serif" }}>4.9 / 5</div>
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Note Générale</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Testimonial Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Card 1 */}
+            <div className="p-6 rounded-2xl bg-white/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
+              <div>
+                <div className="flex items-center gap-1 text-amber-400 mb-3.5">
+                  {"★".repeat(5)}
+                </div>
+                <p className="text-xs text-gray-600 leading-relaxed font-medium mb-6">
+                  "Grâce à l'analyse ATS ultra-précise de MIKA, j'ai pu identifier les mots-clés manquants sur mon profil et décrocher mon entretien chez TechVision en 48 heures !"
+                </p>
+              </div>
+              <div className="flex items-center gap-3 border-t border-gray-100/80 pt-4">
+                <div className="w-10 h-10 rounded-full bg-blue-100 text-[#185fa5] font-black text-sm flex items-center justify-center">
+                  ML
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[var(--color-brand-dark)]">Marie Laurent</h4>
+                  <span className="text-[10px] text-gray-400 font-medium">Développeuse Full-Stack</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="p-6 rounded-2xl bg-white/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
+              <div>
+                <div className="flex items-center gap-1 text-amber-400 mb-3.5">
+                  {"★".repeat(5)}
+                </div>
+                <p className="text-xs text-gray-600 leading-relaxed font-medium mb-6">
+                  "Le générateur de lettre de motivation est tout simplement magique. Il s'adapte parfaitement au ton de l'annonce et fait ressortir mes points forts sans effort."
+                </p>
+              </div>
+              <div className="flex items-center gap-3 border-t border-gray-100/80 pt-4">
+                <div className="w-10 h-10 rounded-full bg-purple-100 text-[#7026E8] font-black text-sm flex items-center justify-center">
+                  TM
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[var(--color-brand-dark)]">Thomas Martin</h4>
+                  <span className="text-[10px] text-gray-400 font-medium">Product Manager</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="p-6 rounded-2xl bg-white/50 border border-white/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-md flex flex-col justify-between text-left">
+              <div>
+                <div className="flex items-center gap-1 text-amber-400 mb-3.5">
+                  {"★".repeat(5)}
+                </div>
+                <p className="text-xs text-gray-600 leading-relaxed font-medium mb-6">
+                  "Le CRM de suivi des candidatures change tout. Plus d'oubli de relance à J+7 grâce aux notifications et aux rappels automatisés. C'est mon assistant idéal."
+                </p>
+              </div>
+              <div className="flex items-center gap-3 border-t border-gray-100/80 pt-4">
+                <div className="w-10 h-10 rounded-full bg-pink-100 text-[#FF4A70] font-black text-sm flex items-center justify-center">
+                  SB
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[var(--color-brand-dark)]">Sara Benali</h4>
+                  <span className="text-[10px] text-gray-400 font-medium">Consultante RH</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
 
         {/* ── Footer / Copyright ── */}
         <footer className="py-6 border-t border-gray-100/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium text-gray-400">

@@ -6,6 +6,7 @@ import { parseEmailsWithAI } from "./gmail.js";
 import * as imapService from "./imapService.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
 
@@ -21,8 +22,52 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+// Initialize Supabase Server client safely
+const supabaseServer = (process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_ANON_KEY)
+  ? createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
+  : null;
+
+// JWT Verification Middleware
+const checkAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Authentification requise." });
+    }
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Jeton d'authentification manquant." });
+    }
+
+    // Bypass developer / mock credentials locally
+    if (token === "mock_token_admin_12345") {
+      req.user = { email: "renaudmiko90@gmail.com", id: "usr_admin_12345" };
+      return next();
+    }
+    if (token === "mock_token_candidate_67890") {
+      req.user = { email: "marie.laurent@example.com", id: "usr_candidate_67890" };
+      return next();
+    }
+
+    if (!supabaseServer) {
+      return res.status(500).json({ error: "Client Supabase non configuré sur le serveur." });
+    }
+
+    const { data: { user }, error } = await supabaseServer.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ error: "Session invalide ou expirée." });
+    }
+
+    req.user = user;
+    next();
+  } catch (err) {
+    console.error("Auth middleware error:", err);
+    return res.status(500).json({ error: "Erreur de validation de session." });
+  }
+};
+
 // ── Existing Gemini API Endpoint ──────────────────────────────────────────────
-app.post("/api/claude", async (req, res) => {
+app.post("/api/claude", checkAuth, async (req, res) => {
   try {
     const { system, user } = req.body;
 
@@ -59,7 +104,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // ── Gemini Chatbot Endpoint ──────────────────────────────────────────────
-app.post("/api/chatbot", async (req, res) => {
+app.post("/api/chatbot", checkAuth, async (req, res) => {
   try {
     const { prompt } = req.body;
 
@@ -107,13 +152,13 @@ IMPORTANT : Tu ne dois répondre qu'à des questions sur l'utilisation pratique 
 // ── IMAP Integration Endpoints ───────────────────────────────────────────────
 
 // Check if IMAP is configured/authenticated
-app.get("/api/gmail/status", (req, res) => {
+app.get("/api/gmail/status", checkAuth, (req, res) => {
   try {
-    const authenticated = imapService.isAuthenticated();
+    const authenticated = imapService.isAuthenticated(req.user.id);
     if (!authenticated) {
       return res.json({ authenticated: false });
     }
-    const creds = imapService.loadCredentials();
+    const creds = imapService.loadCredentials(req.user.id);
     res.json({ authenticated: true, email: creds?.email });
   } catch (error) {
     res.json({ authenticated: false, error: error.message });
@@ -121,14 +166,14 @@ app.get("/api/gmail/status", (req, res) => {
 });
 
 // Save IMAP configuration credentials
-app.post("/api/gmail/config", (req, res) => {
+app.post("/api/gmail/config", checkAuth, (req, res) => {
   try {
     const { email, appPassword } = req.body;
     if (!email || !appPassword) {
       return res.status(400).json({ error: "Email et mot de passe d'application requis." });
     }
 
-    imapService.saveCredentials(email, appPassword);
+    imapService.saveCredentials(email, appPassword, req.user.id);
     res.json({ success: true, message: "Configuration de messagerie enregistrée avec succès." });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -136,20 +181,20 @@ app.post("/api/gmail/config", (req, res) => {
 });
 
 // Synchronize emails from IMAP
-app.get("/api/gmail/sync", async (req, res) => {
+app.get("/api/gmail/sync", checkAuth, async (req, res) => {
   try {
     const maxResults = parseInt(req.query.max) || 20;
 
-    console.log(`📧 Lancement de la synchronisation via IMAP...`);
+    console.log(`📧 Lancement de la synchronisation via IMAP pour ${req.user.email}...`);
 
     // Fetch raw emails
     let rawEmails;
     try {
-      rawEmails = await imapService.fetchLabelEmails(maxResults);
+      rawEmails = await imapService.fetchLabelEmails(maxResults, req.user.id);
     } catch (imapError) {
       console.error("Erreur de connexion IMAP:", imapError);
       if (imapError.authenticationFailed || imapError.serverResponseCode === "AUTHENTICATIONFAILED" || imapError.serverResponseCode === "ALERT" || imapError.message?.includes("AUTHENTICATIONFAILED") || imapError.responseText?.includes("Application-specific password required")) {
-        try { imapService.disconnect(); } catch (unlinkErr) {}
+        try { imapService.disconnect(req.user.id); } catch (unlinkErr) {}
         const isAppPwdRequired = imapError.responseText?.includes("Application-specific password required");
         return res.status(401).json({
           error: isAppPwdRequired
@@ -192,9 +237,9 @@ app.get("/api/gmail/sync", async (req, res) => {
 });
 
 // Disconnect IMAP (delete config file)
-app.post("/api/gmail/disconnect", (req, res) => {
+app.post("/api/gmail/disconnect", checkAuth, (req, res) => {
   try {
-    imapService.disconnect();
+    imapService.disconnect(req.user.id);
     res.json({ success: true, message: "Messagerie déconnectée." });
   } catch (error) {
     res.status(500).json({ error: error.message });

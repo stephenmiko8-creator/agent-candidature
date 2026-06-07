@@ -2,14 +2,54 @@ import { useState, useEffect, useCallback } from "react";
 import HeroSection from "./HeroSection";
 import AgentCandidature from "./AgentCandidature";
 import RecruiterDashboard from "./RecruiterDashboard";
+import AdminDashboard from "./AdminDashboard";
 import BlogPage from "./BlogPage";
 import AboutPage from "./AboutPage";
+import { supabase } from "./supabaseClient";
+import AuthModal from "./AuthModal";
 
 function App() {
   const [view, setView] = useState("hero"); // "hero", "builder", "crm", "gmail"
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCandidatureId, setSelectedCandidatureId] = useState(null);
+
+  // Supabase Auth State
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingView, setPendingView] = useState(null);
+
+  // Monitor Supabase auth session
+  useEffect(() => {
+    if (supabase && supabase.auth) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          setUser(session.user);
+          setToken(session.access_token);
+        }
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          setUser(session.user);
+          setToken(session.access_token);
+        } else {
+          setUser(null);
+          setToken(null);
+        }
+      });
+
+      return () => {
+        if (subscription) subscription.unsubscribe();
+      };
+    }
+  }, []);
+
+  const handleAuthSuccess = (authUser, authToken) => {
+    setUser(authUser);
+    setToken(authToken);
+  };
 
   // Keyboard shortcut Ctrl+K or Cmd+K to open search, and Escape to close
   useEffect(() => {
@@ -90,19 +130,98 @@ function App() {
     }
   };
 
+  // Views requiring active user session
+  const authRequiredViews = ["builder", "crm", "gmail", "recruiter", "admin"];
+  const isAdmin = user?.email === "renaudmiko90@gmail.com";
+
+  const handleNavigate = (target) => {
+    if (authRequiredViews.includes(target) && !user) {
+      setPendingView(target);
+      setShowAuthModal(true);
+    } else {
+      setView(target);
+    }
+  };
+
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
+      {/* ── Auth Modal Overlay ── */}
+      {showAuthModal && (
+        <AuthModal
+          onAuthSuccess={(authUser, authToken) => {
+            handleAuthSuccess(authUser, authToken);
+            setShowAuthModal(false);
+            if (pendingView) {
+              setView(pendingView);
+              setPendingView(null);
+            }
+          }}
+          onCancel={() => {
+            setShowAuthModal(false);
+            setPendingView(null);
+          }}
+        />
+      )}
+
       {/* ── Main View Container ── */}
       {view === "hero" ? (
         <HeroSection 
-          onNavigate={(target) => setView(target)} 
+          onNavigate={handleNavigate} 
           onSearch={() => setShowSearch(true)} 
           currentView={view} 
+          isAdmin={isAdmin}
         />
       ) : view === "blog" ? (
         <BlogPage onBack={() => setView("hero")} />
       ) : view === "about" ? (
         <AboutPage onBack={() => setView("hero")} />
+      ) : view === "admin" ? (
+        !isAdmin ? (
+          <div style={{ padding: "80px 20px", textAlign: "center", color: "#FFF", fontFamily: "'Inter', sans-serif" }}>
+            <h2 style={{ marginBottom: "16px" }}>🔒 Accès réservé aux administrateurs.</h2>
+            <p style={{ color: "#94A3B8", marginBottom: "24px" }}>Veuillez vous connecter avec vos identifiants administrateur.</p>
+            <button 
+              onClick={() => setView("hero")} 
+              style={{
+                padding: "10px 20px", 
+                background: "rgba(168, 85, 247, 0.2)", 
+                border: "1px solid rgba(168, 85, 247, 0.5)", 
+                borderRadius: "8px", 
+                color: "#A855F7", 
+                cursor: "pointer"
+              }}
+            >
+              Retour Accueil
+            </button>
+          </div>
+        ) : (
+          <div style={{ position: "relative" }}>
+            <div style={{
+              position: "absolute",
+              top: "12px",
+              right: "120px",
+              zIndex: 9999,
+            }}>
+              <button
+                onClick={() => setView("hero")}
+                style={{
+                  padding: "8px 14px",
+                  background: "rgba(26, 26, 46, 0.9)",
+                  color: "#fff",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  fontFamily: "'Inter', sans-serif"
+                }}
+              >
+                ↩ Retour Accueil
+              </button>
+            </div>
+            <AdminDashboard />
+          </div>
+        )
       ) : view === "recruiter" ? (
         <div style={{ position: "relative" }}>
           {/* Top header navigation to let recruiter go back */}
@@ -135,10 +254,20 @@ function App() {
         <AgentCandidature
           initialView={view === "builder" ? "builder" : "dashboard"}
           initialShowGmail={view === "gmail"}
-          onNavigate={(target) => setView(target)}
+          onNavigate={handleNavigate}
           onSearch={() => setShowSearch(true)}
           selectedCandidatureId={selectedCandidatureId}
           clearSelectedCandidatureId={() => setSelectedCandidatureId(null)}
+          user={user}
+          token={token}
+          onLogout={async () => {
+            if (supabase && supabase.auth) {
+              await supabase.auth.signOut();
+            }
+            setUser(null);
+            setToken(null);
+            setView("hero");
+          }}
         />
       )}
 

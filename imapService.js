@@ -6,24 +6,28 @@ import { simpleParser } from "mailparser";
 
 const __fn = fileURLToPath(import.meta.url);
 const __dn = path.dirname(__fn);
-const CREDENTIALS_PATH = path.join(__dn, "imap_credentials.json");
-
-export function isAuthenticated() {
-  return fs.existsSync(CREDENTIALS_PATH);
+function getCredentialsPath(userId = "default") {
+  const safeId = String(userId).replace(/[^a-zA-Z0-9_-]/g, "");
+  return path.join(__dn, `imap_credentials_${safeId || "default"}.json`);
 }
 
-export function saveCredentials(email, appPassword) {
+export function isAuthenticated(userId = "default") {
+  return fs.existsSync(getCredentialsPath(userId));
+}
+
+export function saveCredentials(email, appPassword, userId = "default") {
   // Strip spaces from Gmail app passwords if user pasted them formatted like "abcd efgh ijkl mnop"
   const cleanPassword = appPassword.replace(/\s+/g, "");
   const data = { email, appPassword: cleanPassword };
-  fs.writeFileSync(CREDENTIALS_PATH, JSON.stringify(data, null, 2));
+  fs.writeFileSync(getCredentialsPath(userId), JSON.stringify(data, null, 2));
   return data;
 }
 
-export function loadCredentials() {
-  if (fs.existsSync(CREDENTIALS_PATH)) {
+export function loadCredentials(userId = "default") {
+  const credPath = getCredentialsPath(userId);
+  if (fs.existsSync(credPath)) {
     try {
-      return JSON.parse(fs.readFileSync(CREDENTIALS_PATH, "utf-8"));
+      return JSON.parse(fs.readFileSync(credPath, "utf-8"));
     } catch (e) {
       console.error("Erreur chargement credentials IMAP:", e);
     }
@@ -31,14 +35,15 @@ export function loadCredentials() {
   return null;
 }
 
-export function disconnect() {
-  if (fs.existsSync(CREDENTIALS_PATH)) {
-    fs.unlinkSync(CREDENTIALS_PATH);
+export function disconnect(userId = "default") {
+  const credPath = getCredentialsPath(userId);
+  if (fs.existsSync(credPath)) {
+    fs.unlinkSync(credPath);
   }
 }
 
-export async function fetchLabelEmails(maxResults = 20) {
-  const creds = loadCredentials();
+export async function fetchLabelEmails(maxResults = 20, userId = "default") {
+  const creds = loadCredentials(userId);
   if (!creds || !creds.email || !creds.appPassword) {
     throw new Error("Boîte de messagerie non configurée. Veuillez renseigner votre adresse e-mail et votre mot de passe d'application.");
   }
