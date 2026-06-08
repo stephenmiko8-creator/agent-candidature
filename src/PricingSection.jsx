@@ -26,9 +26,12 @@ export default function PricingSection({ onBack, user, token, onOpenAuth }) {
     {
       id: "premium",
       name: "Candidat Premium",
-      price: "19 €",
-      altPrice: "12 500 FCFA",
+      price: "10 €",
+      originalPrice: "19 €",
+      altPrice: "6 500 FCFA",
+      originalAltPrice: "12 500 FCFA",
       period: "/ mois",
+      badge: "Get it now for 10 euros !",
       description: "Maximisez vos chances de décrocher des entretiens avec l'agent d'IA.",
       features: [
         "ATS Optimizer illimité",
@@ -40,14 +43,17 @@ export default function PricingSection({ onBack, user, token, onOpenAuth }) {
       cta: "Passer au Premium",
       popular: true,
       stripePriceId: "price_premium",
-      fedapayAmount: 12500,
+      fedapayAmount: 6500,
     },
     {
       id: "recruiter_pro",
       name: "Recruteur Pro",
-      price: "49 €",
-      altPrice: "32 000 FCFA",
+      price: "15 €",
+      originalPrice: "29 €",
+      altPrice: "10 000 FCFA",
+      originalAltPrice: "19 000 FCFA",
       period: "/ mois",
+      badge: "Get it now for 15 euros !",
       description: "Le portail ultime pour gérer, contacter et recruter vos talents.",
       features: [
         "Messagerie en temps réel avec les candidats",
@@ -59,7 +65,7 @@ export default function PricingSection({ onBack, user, token, onOpenAuth }) {
       cta: "Découvrir Recruteur Pro",
       popular: false,
       stripePriceId: "price_recruiter",
-      fedapayAmount: 32000,
+      fedapayAmount: 10000,
     },
   ];
 
@@ -169,12 +175,27 @@ export default function PricingSection({ onBack, user, token, onOpenAuth }) {
                 <h3 className="text-xl font-bold text-slate-800 mb-2">{plan.name}</h3>
                 <p className="text-sm text-slate-500 mb-6 min-h-[40px]">{plan.description}</p>
                 
-                <div className="flex items-baseline mb-6">
-                  <span className="text-4xl font-extrabold text-slate-800">{plan.price}</span>
-                  {plan.altPrice && (
-                    <span className="text-sm text-slate-400 ml-2">ou {plan.altPrice}</span>
+                <div className="flex flex-col gap-1 mb-6">
+                  {plan.badge && (
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md self-start border border-emerald-200/50 mb-2">
+                      ⚡ {plan.badge}
+                    </span>
                   )}
-                  <span className="text-slate-400 ml-1 text-sm">{plan.period}</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-extrabold text-slate-800">{plan.price}</span>
+                    {plan.originalPrice && (
+                      <span className="text-lg text-slate-400 line-through font-semibold">{plan.originalPrice}</span>
+                    )}
+                    <span className="text-slate-400 text-sm">{plan.period}</span>
+                  </div>
+                  {plan.altPrice && (
+                    <div className="flex items-center gap-1.5 text-sm text-slate-400">
+                      <span>ou {plan.altPrice}</span>
+                      {plan.originalAltPrice && (
+                        <span className="line-through text-xs">{plan.originalAltPrice}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-slate-100 my-6"></div>
