@@ -18,7 +18,7 @@ export default function PricingSection({ onBack, user, token, onOpenAuth }) {
         "Limité à 3 candidatures actives",
         "Accès standard à l'IA MIKA",
       ],
-      cta: "Plan Actuel",
+      cta: "Free Plan",
       popular: false,
       stripePriceId: null,
       fedapayAmount: 0,
