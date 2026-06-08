@@ -3,8 +3,12 @@ import { supabase } from "./supabaseClient";
 
 export default function AuthModal({ onAuthSuccess, onCancel }) {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [signUpRole, setSignUpRole] = useState("candidate"); // "candidate" | "recruiter"
+  const [companyName, setCompanyName] = useState("");
+  const [companyRegNumber, setCompanyRegNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -38,9 +42,28 @@ export default function AuthModal({ onAuthSuccess, onCancel }) {
 
     try {
       if (isSignUp) {
+        if (signUpRole === "recruiter" && (!companyName || !companyRegNumber)) {
+          setErrorMsg("Veuillez renseigner le nom de l'entreprise et son numéro d'immatriculation.");
+          setLoading(false);
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          setErrorMsg("Les mots de passe ne correspondent pas.");
+          setLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              role: signUpRole,
+              company_name: signUpRole === "recruiter" ? companyName : null,
+              company_registration_number: signUpRole === "recruiter" ? companyRegNumber : null,
+            }
+          }
         });
         if (error) throw error;
         setSuccessMsg("Inscription réussie ! Vérifie ta boîte de messagerie.");
@@ -123,6 +146,63 @@ export default function AuthModal({ onAuthSuccess, onCancel }) {
             {successMsg && <div className="bg-emerald-500/10 border border-emerald-500/25 text-[#00E699] px-4 py-3 rounded-lg text-sm mb-4">✅ {successMsg}</div>}
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {isSignUp && (
+                <div className="flex flex-col gap-3 p-3 bg-purple-500/5 rounded-xl border border-purple-500/10 mb-2">
+                  <label className="text-xs text-slate-300 font-semibold">Je m'inscris en tant que :</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="signUpRole"
+                        value="candidate"
+                        checked={signUpRole === "candidate"}
+                        onChange={() => setSignUpRole("candidate")}
+                        className="accent-purple-500"
+                      />
+                      Candidat
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="signUpRole"
+                        value="recruiter"
+                        checked={signUpRole === "recruiter"}
+                        onChange={() => setSignUpRole("recruiter")}
+                        className="accent-purple-500"
+                      />
+                      Recruteur
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {isSignUp && signUpRole === "recruiter" && (
+                <div className="flex flex-col gap-3 p-3 bg-cyan-500/5 rounded-xl border border-cyan-500/10 mb-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-slate-400 font-medium">Nom de l'entreprise</label>
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="Ex: MIKA Corp"
+                      className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-cyan-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-cyan-500/50 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-slate-400 font-medium">Numéro d'immatriculation / SIRET</label>
+                    <input
+                      type="text"
+                      value={companyRegNumber}
+                      onChange={(e) => setCompanyRegNumber(e.target.value)}
+                      placeholder="Ex: 123 456 789 00012"
+                      className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-cyan-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-cyan-500/50 transition-colors"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-400 font-medium">Adresse Email</label>
                 <input
@@ -146,6 +226,20 @@ export default function AuthModal({ onAuthSuccess, onCancel }) {
                   required
                 />
               </div>
+
+              {isSignUp && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-slate-400 font-medium">Confirmer le mot de passe</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-purple-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-purple-500/50 transition-colors"
+                    required
+                  />
+                </div>
+              )}
 
               <button type="submit" disabled={loading} className="mt-2 p-3 bg-gradient-to-r from-[#7026E8] to-[#A855F7] rounded-lg text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
                 {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}

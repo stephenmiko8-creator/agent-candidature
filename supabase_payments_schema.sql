@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     stripe_customer_id TEXT UNIQUE,
     fedapay_customer_id TEXT,
     subscription_tier TEXT NOT NULL DEFAULT 'free',
+    role TEXT NOT NULL DEFAULT 'candidate',
+    company_name TEXT,
+    company_registration_number TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -51,9 +54,25 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions(use
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, subscription_tier)
-  VALUES (new.id, 'free')
-  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.profiles (
+    id, 
+    subscription_tier,
+    role,
+    company_name,
+    company_registration_number
+  )
+  VALUES (
+    new.id, 
+    'free',
+    COALESCE(new.raw_user_meta_data->>'role', 'candidate'),
+    new.raw_user_meta_data->>'company_name',
+    new.raw_user_meta_data->>'company_registration_number'
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET 
+    role = EXCLUDED.role,
+    company_name = EXCLUDED.company_name,
+    company_registration_number = EXCLUDED.company_registration_number;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
