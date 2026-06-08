@@ -37,6 +37,11 @@ L'application repose sur un écosystème moderne, performant et hautement scalab
 ### Jalon 5 : Sécurisation pour la Production (Render)
 *   **Sécurité** : Intégration d'un sélecteur de mode de développement (`isLocal`). Le mode de connexion rapide (Bypass) n'apparaît que lors du développement sur votre ordinateur (`localhost`). Dès que le site est compilé et hébergé en ligne sur **Render**, l'authentification stricte par mot de passe Supabase prend le relais.
 
+### Jalon 6 : L'Infrastructure de Paiement Globale (Stripe & FedaPay)
+*   **Fonctionnalité** : Intégration de Stripe (pour les cartes bancaires internationales, Apple Pay, Link et les paiements Crypto USDC/USDT) et de FedaPay (pour les paiements par Mobile Money : MTN, Orange Money, Wave en Afrique de l'Ouest).
+*   **Sécurisation par Webhooks** : Utilisation de signatures cryptographiques pour vérifier les événements de paiement de Stripe (`stripe-signature`) et FedaPay (`x-fedapay-signature`) via Express en récupérant le buffer brut (`rawBody`) des requêtes.
+*   **Bypass local / Sandbox** : Mise en place d'un simulateur de redirection locale. Si les clés secrètes d'environnement sont absentes ou configurées avec des valeurs de test fictives, l'application redirige automatiquement vers une page de succès simulée, permettant un test complet et immédiat de l'expérience d'abonnement.
+
 ---
 
 ## 💡 3. Leçons Clés pour les Futurs Développeurs SaaS (Contenu du Livre/Formation)
@@ -45,3 +50,5 @@ L'application repose sur un écosystème moderne, performant et hautement scalab
 2.  **La gestion de l'état asynchrone** : Toujours prévoir un mode dégradé (fallback). Si la base de données Supabase est injoignable, l'application MIKA bascule automatiquement sur le stockage local pour ne jamais bloquer l'utilisateur.
 3.  **Protéger les données dès le premier jour** : L'utilisation de RLS dans PostgreSQL évite d'écrire des dizaines de lignes de code de vérification complexes dans le frontend. La base de données rejette elle-même les requêtes frauduleuses.
 4.  **Hébergement hybride** : Render et GitHub forment un combo parfait pour le déploiement continu (CI/CD). Un simple `git push` suffit à mettre à jour l'application en moins de 2 minutes.
+5.  **Multi-Gateway & Localisation de Paiement** : Intégrer dès le départ des solutions de paiement adaptées au marché cible (Stripe pour l'international et les cryptos stables, FedaPay pour les wallets Mobile Money locaux).
+6.  **Sécuriser les flux avec les Webhooks** : Ne jamais faire confiance au frontend pour modifier le statut d'un utilisateur après un paiement. Seul le webhook backend authentifié et cryptographiquement vérifié doit déclencher la mise à jour des privilèges dans la base de données.

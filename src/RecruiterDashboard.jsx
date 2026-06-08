@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "./supabaseClient";
 
 const candidates = [
   { initials: "AL", name: "Alice Lambert", role: "M2 Finance — Paris Dauphine", ats: 88, status: "new" },
@@ -20,7 +21,7 @@ const avatarColors = [
   { bg: "#f1efe8", color: "#5f5e5a" },
 ];
 
-export default function RecruiterDashboard() {
+export default function RecruiterDashboard({ user, token }) {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [form, setForm] = useState({
     title: "",
@@ -32,55 +33,182 @@ export default function RecruiterDashboard() {
   });
   const [published, setPublished] = useState(false);
 
-  // Candidate chat messages for the recruiter
-  const [messages, setMessages] = useState([
+  // ── Supabase-driven candidate conversations ──
+  const isSupabaseConfigured =
+    supabase &&
+    supabase.supabaseUrl &&
+    !supabase.supabaseUrl.includes("your-project.supabase.co");
+
+  const MOCK_STORAGE_KEY = "recruiter_mock_conversations";
+
+  const getDefaultMockConversations = () => [
     {
-      id: "msg_1",
-      user: "Alice Lambert",
-      email: "alice.lambert@u-paris.fr",
-      type: "Application",
+      id: "mock_conv_1",
+      candidate_name: "Alice Lambert",
+      candidate_email: "alice.lambert@u-paris.fr",
       subject: "Candidature - Alternance M2 Finance",
-      content: "Bonjour, j'ai postulé à votre offre d'Alternance en Finance. Serait-il possible d'échanger sur les missions ?",
+      type: "Application",
       status: "New",
-      date: "07 Juin 2026, 10:15",
-      replies: [
-        { sender: "user", text: "Bonjour, j'ai postulé à votre offre d'Alternance en Finance. Serait-il possible d'échanger sur les missions ?" }
+      created_at: "2026-06-07T10:15:00Z",
+      messages: [
+        { id: "m1", sender: "candidate", text: "Bonjour, j'ai postulé à votre offre d'Alternance en Finance. Serait-il possible d'échanger sur les missions ?", created_at: "2026-06-07T10:15:00Z" }
       ]
     },
     {
-      id: "msg_2",
-      user: "Sara Benali",
-      email: "sara.benali@essec.edu",
-      type: "Interview",
+      id: "mock_conv_2",
+      candidate_name: "Sara Benali",
+      candidate_email: "sara.benali@essec.edu",
       subject: "Disponibilités pour entretien technique",
-      content: "Bonjour, suite à notre échange, je vous confirme être disponible ce jeudi à 14h pour notre entretien.",
+      type: "Interview",
       status: "Scheduled",
-      date: "06 Juin 2026, 16:40",
-      replies: [
-        { sender: "user", text: "Bonjour, suite à notre échange, je vous confirme être disponible ce jeudi à 14h pour notre entretien." }
+      created_at: "2026-06-06T16:40:00Z",
+      messages: [
+        { id: "m2", sender: "candidate", text: "Bonjour, suite à notre échange, je vous confirme être disponible ce jeudi à 14h pour notre entretien.", created_at: "2026-06-06T16:40:00Z" }
       ]
     }
-  ]);
-  const [selectedMessageId, setSelectedMessageId] = useState(null);
-  const [replyText, setReplyText] = useState("");
+  ];
 
-  const handleSendReply = (msgId) => {
-    if (!replyText.trim()) return;
-    setMessages(prev => prev.map(m => {
-      if (m.id !== msgId) return m;
-      return {
-        ...m,
-        replies: [...m.replies, { sender: "recruiter", text: replyText.trim() }]
-      };
-    }));
-    setReplyText("");
+  const [conversations, setConversations] = useState([]);
+  const [selectedConvId, setSelectedConvId] = useState(null);
+  const [convMessages, setConvMessages] = useState([]);
+  const [replyText, setReplyText] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  // Load conversations on mount
+  useEffect(() => {
+    loadConversations();
+  }, [user]);
+
+  // Auto-scroll messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [convMessages]);
+
+  const loadConversations = async () => {
+    if (!isSupabaseConfigured) {
+      const saved = localStorage.getItem(MOCK_STORAGE_KEY);
+      setConversations(saved ? JSON.parse(saved) : getDefaultMockConversations());
+      return;
+    }
+    try {
+      setChatLoading(true);
+      const { data, error } = await supabase
+        .from("candidate_conversations")
+        .select("*")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (err) {
+      console.error("Erreur chargement conversations:", err);
+      const saved = localStorage.getItem(MOCK_STORAGE_KEY);
+      setConversations(saved ? JSON.parse(saved) : getDefaultMockConversations());
+    } finally {
+      setChatLoading(false);
+    }
   };
 
-  const handleChangeStatus = (msgId, newStatus) => {
-    setMessages(prev => prev.map(m => {
-      if (m.id !== msgId) return m;
-      return { ...m, status: newStatus };
-    }));
+  // Load messages when a conversation is selected
+  useEffect(() => {
+    if (!selectedConvId) { setConvMessages([]); return; }
+
+    if (!isSupabaseConfigured) {
+      const conv = conversations.find(c => c.id === selectedConvId);
+      setConvMessages(conv?.messages || []);
+      return;
+    }
+
+    const fetchMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("conversation_messages")
+          .select("*")
+          .eq("conversation_id", selectedConvId)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        setConvMessages(data || []);
+      } catch (err) {
+        console.error("Erreur chargement messages:", err);
+      }
+    };
+    fetchMessages();
+  }, [selectedConvId]);
+
+  // Real-time subscription for new messages
+  useEffect(() => {
+    if (!isSupabaseConfigured || !selectedConvId) return;
+
+    const channel = supabase
+      .channel(`recruiter_chat_${selectedConvId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "conversation_messages",
+        filter: `conversation_id=eq.${selectedConvId}`
+      }, (payload) => {
+        setConvMessages(prev => {
+          if (prev.some(m => m.id === payload.new.id)) return prev;
+          return [...prev, payload.new];
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedConvId]);
+
+  const handleSendReply = async () => {
+    const text = replyText.trim();
+    if (!text) return;
+    setReplyText("");
+
+    if (!isSupabaseConfigured) {
+      const newMsg = { id: `mock_${Date.now()}`, sender: "recruiter", text, created_at: new Date().toISOString() };
+      const updated = conversations.map(c => {
+        if (c.id !== selectedConvId) return c;
+        return { ...c, messages: [...(c.messages || []), newMsg] };
+      });
+      setConversations(updated);
+      setConvMessages(prev => [...prev, newMsg]);
+      localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(updated));
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("conversation_messages")
+        .insert({ conversation_id: selectedConvId, sender: "recruiter", text });
+      if (error) throw error;
+
+      await supabase.from("candidate_conversations").update({ updated_at: new Date().toISOString() }).eq("id", selectedConvId);
+
+      const { data: msgs } = await supabase
+        .from("conversation_messages")
+        .select("*")
+        .eq("conversation_id", selectedConvId)
+        .order("created_at", { ascending: true });
+      if (msgs) setConvMessages(msgs);
+    } catch (err) {
+      console.error("Erreur envoi réponse:", err);
+    }
+  };
+
+  const handleChangeStatus = async (convId, newStatus) => {
+    if (!isSupabaseConfigured) {
+      const updated = conversations.map(c => c.id === convId ? { ...c, status: newStatus } : c);
+      setConversations(updated);
+      localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(updated));
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from("candidate_conversations")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", convId);
+      if (error) throw error;
+      setConversations(prev => prev.map(c => c.id === convId ? { ...c, status: newStatus } : c));
+    } catch (err) {
+      console.error("Erreur changement statut:", err);
+    }
   };
 
   const handlePublish = () => {
@@ -95,7 +223,7 @@ export default function RecruiterDashboard() {
     { id: "dashboard", icon: "📊", label: "Dashboard" },
     { id: "offers", icon: "💼", label: "My job offers", count: 4 },
     { id: "candidates", icon: "👥", label: "Candidates", count: candidates.length },
-    { id: "messages", icon: "✉️", label: "Messages", count: messages.filter(m => m.status !== "Resolved").length },
+    { id: "messages", icon: "✉️", label: "Messages", count: conversations.filter(c => c.status !== "Resolved").length },
     { id: "analytics", icon: "📈", label: "Analytics" },
     { id: "ai", icon: "🤖", label: "AI matching" },
     { id: "settings", icon: "⚙️", label: "Settings" },
@@ -375,15 +503,22 @@ export default function RecruiterDashboard() {
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16, alignItems: "start" }}>
-                {/* Tickets list */}
+                {/* Conversations list */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {messages.map((m) => {
-                    const isSelected = selectedMessageId === m.id;
+                  {chatLoading ? (
+                    <div style={{ padding: 20, textAlign: "center", color: "#888", fontSize: 12 }}>Chargement des conversations...</div>
+                  ) : conversations.length === 0 ? (
+                    <div style={{ padding: 20, textAlign: "center", color: "#888", fontSize: 12 }}>Aucune conversation pour le moment.</div>
+                  ) : conversations.map((conv) => {
+                    const isSelected = selectedConvId === conv.id;
+                    const displayName = conv.candidate_name || conv.subject || "Candidat";
+                    const displayEmail = conv.candidate_email || "";
+                    const displayDate = conv.created_at ? new Date(conv.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
                     return (
                       <div
-                        key={m.id}
+                        key={conv.id}
                         onClick={() => {
-                          setSelectedMessageId(m.id);
+                          setSelectedConvId(conv.id);
                           setReplyText("");
                         }}
                         style={{
@@ -398,64 +533,57 @@ export default function RecruiterDashboard() {
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                           <span style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            background: m.type === "Application" ? "#e0f2fe" : "#fef3c7",
-                            color: m.type === "Application" ? "#075985" : "#92400e"
+                            fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                            padding: "2px 6px", borderRadius: 4,
+                            background: (conv.type || "Application") === "Application" ? "#e0f2fe" : "#fef3c7",
+                            color: (conv.type || "Application") === "Application" ? "#075985" : "#92400e"
                           }}>
-                            {m.type}
+                            {conv.type || "Application"}
                           </span>
                           <span style={{
                             fontSize: 10,
-                            color: m.status === "Resolved" ? "#3b6d11" : "#185fa5",
+                            color: conv.status === "Resolved" ? "#3b6d11" : "#185fa5",
                             fontWeight: 600
                           }}>
-                            ● {m.status}
+                            ● {conv.status || "New"}
                           </span>
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1a2e", marginBottom: 4 }}>
-                          {m.subject}
+                          {conv.subject || "Conversation"}
                         </div>
                         <div style={{ fontSize: 11, color: "#666", marginBottom: 6 }}>
-                          Candidat: {m.user} ({m.email})
+                          Candidat: {displayName}{displayEmail ? ` (${displayEmail})` : ""}
                         </div>
                         <div style={{ fontSize: 10, color: "#aaa", textAlign: "right" }}>
-                          {m.date}
+                          {displayDate}
                         </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Ticket conversation thread */}
+                {/* Conversation thread */}
                 <div style={{ ...styles.card, minHeight: 400, display: "flex", flexDirection: "column" }}>
-                  {selectedMessageId ? (() => {
-                    const ticket = messages.find(m => m.id === selectedMessageId);
-                    if (!ticket) return null;
+                  {selectedConvId ? (() => {
+                    const conv = conversations.find(c => c.id === selectedConvId);
+                    if (!conv) return null;
+                    const displayName = conv.candidate_name || conv.subject || "Candidat";
+                    const displayEmail = conv.candidate_email || "";
                     return (
                       <div style={{ display: "flex", flexDirection: "column", height: "100%", flex: 1 }}>
                         {/* Header details */}
                         <div style={{ borderBottom: "1px solid #eee", paddingBottom: 12, marginBottom: 12 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                             <div>
-                              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>{ticket.subject}</h3>
-                              <span style={{ fontSize: 12, color: "#888" }}>Candidat : {ticket.user} ({ticket.email})</span>
+                              <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>{conv.subject || "Conversation"}</h3>
+                              <span style={{ fontSize: 12, color: "#888" }}>Candidat : {displayName}{displayEmail ? ` (${displayEmail})` : ""}</span>
                             </div>
-                            {/* Status selector */}
                             <select
-                              value={ticket.status}
-                              onChange={(e) => handleChangeStatus(ticket.id, e.target.value)}
+                              value={conv.status || "New"}
+                              onChange={(e) => handleChangeStatus(conv.id, e.target.value)}
                               style={{
-                                padding: "4px 8px",
-                                fontSize: 11,
-                                fontWeight: 600,
-                                borderRadius: 6,
-                                border: "1px solid #ccc",
-                                outline: "none",
-                                background: "#fff"
+                                padding: "4px 8px", fontSize: 11, fontWeight: 600,
+                                borderRadius: 6, border: "1px solid #ccc", outline: "none", background: "#fff"
                               }}
                             >
                               <option value="New">New</option>
@@ -468,60 +596,54 @@ export default function RecruiterDashboard() {
 
                         {/* Message list */}
                         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, padding: 4, marginBottom: 16 }}>
-                          {ticket.replies.map((r, rIdx) => {
-                            const isRecruiter = r.sender === "recruiter";
+                          {convMessages.map((msg) => {
+                            const isRecruiter = msg.sender === "recruiter";
                             return (
                               <div
-                                key={rIdx}
+                                key={msg.id}
                                 style={{
                                   alignSelf: isRecruiter ? "flex-end" : "flex-start",
                                   maxWidth: "85%",
                                   background: isRecruiter ? "#1a1a2e" : "#f1f1f4",
                                   color: isRecruiter ? "#fff" : "#1a1a2e",
-                                  padding: "10px 14px",
-                                  borderRadius: 12,
+                                  padding: "10px 14px", borderRadius: 12,
                                   borderBottomRightRadius: isRecruiter ? 2 : 12,
                                   borderBottomLeftRadius: isRecruiter ? 12 : 2,
-                                  fontSize: 12,
-                                  lineHeight: 1.4
+                                  fontSize: 12, lineHeight: 1.4
                                 }}
                               >
                                 <div style={{ fontSize: 10, opacity: 0.8, marginBottom: 4, fontWeight: 700 }}>
-                                  {isRecruiter ? "Recruiter Renaud Corp." : ticket.user}
+                                  {isRecruiter ? "Recruiter Renaud Corp." : displayName}
                                 </div>
-                                {r.text}
+                                {msg.text}
+                                <div style={{ fontSize: 8, opacity: 0.5, marginTop: 4, textAlign: "right" }}>
+                                  {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                                </div>
                               </div>
                             );
                           })}
+                          <div ref={messagesEndRef} />
                         </div>
 
                         {/* Response input */}
                         <div style={{ marginTop: "auto" }}>
                           <textarea
                             style={{
-                              width: "100%",
-                              minHeight: 60,
-                              padding: 10,
-                              fontSize: 12,
-                              borderRadius: 8,
-                              border: "1px solid #ccc",
-                              outline: "none",
-                              fontFamily: "inherit",
-                              resize: "none",
-                              marginBottom: 8
+                              width: "100%", minHeight: 60, padding: 10, fontSize: 12,
+                              borderRadius: 8, border: "1px solid #ccc", outline: "none",
+                              fontFamily: "inherit", resize: "none", marginBottom: 8
                             }}
                             placeholder="Saisissez votre réponse ici..."
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendReply(); } }}
                           />
                           <button
-                            onClick={() => handleSendReply(ticket.id)}
+                            onClick={handleSendReply}
                             style={{
                               ...styles.btnPrimary,
-                              width: "100%",
-                              background: "#1a1a2e",
-                              borderRadius: 8,
-                              padding: "10px"
+                              width: "100%", background: "#1a1a2e",
+                              borderRadius: 8, padding: "10px"
                             }}
                           >
                             Répondre au candidat ✉️

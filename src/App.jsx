@@ -7,6 +7,7 @@ import BlogPage from "./BlogPage";
 import AboutPage from "./AboutPage";
 import { supabase } from "./supabaseClient";
 import AuthModal from "./AuthModal";
+import PricingSection from "./PricingSection";
 
 function App() {
   const [view, setView] = useState("hero"); // "hero", "builder", "crm", "gmail"
@@ -19,6 +20,47 @@ function App() {
   const [token, setToken] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingView, setPendingView] = useState(null);
+
+  // Handle successful payments from Stripe or FedaPay
+  const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get("payment");
+    const provider = params.get("provider");
+    const plan = params.get("plan");
+
+    if (paymentStatus === "success") {
+      setPaymentDetails({ provider, plan });
+      setShowPaymentSuccessModal(true);
+
+      // Upgrade tier locally
+      let newTier = "free";
+      if (plan === "premium" || plan?.includes("premium")) {
+        newTier = "premium";
+      } else if (plan === "recruiter_pro" || plan?.includes("recruiter")) {
+        newTier = "recruiter_pro";
+      }
+
+      // If user is logged in, update Supabase profiles
+      if (user && supabase) {
+        supabase
+          .from("profiles")
+          .update({ subscription_tier: newTier })
+          .eq("id", user.id)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Error updating profile subscription:", error);
+            }
+          });
+      }
+
+      // Clean the URL query parameters
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, [user]);
 
   // Monitor Supabase auth session
   useEffect(() => {
@@ -171,6 +213,13 @@ function App() {
           currentView={view} 
           isAdmin={isAdmin}
         />
+      ) : view === "pricing" ? (
+        <PricingSection
+          onBack={() => setView("hero")}
+          user={user}
+          token={token}
+          onOpenAuth={() => setShowAuthModal(true)}
+        />
       ) : view === "blog" ? (
         <BlogPage onBack={() => setView("hero")} />
       ) : view === "about" ? (
@@ -248,7 +297,7 @@ function App() {
               ↩ Retour Accueil
             </button>
           </div>
-          <RecruiterDashboard />
+          <RecruiterDashboard user={user} token={token} />
         </div>
       ) : (
         <AgentCandidature
@@ -489,6 +538,122 @@ function App() {
             >
               <span>Astuce : Appuyez sur <strong>Ctrl + K</strong> de n'importe où pour ouvrir la recherche.</span>
               <span>Raccourcis : <strong>↑↓</strong> Naviguer</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Payment Success Modal ── */}
+      {showPaymentSuccessModal && (
+        <div
+          onClick={() => setShowPaymentSuccessModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(6, 5, 12, 0.85)",
+            backdropFilter: "blur(12px)",
+            zIndex: 999999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "90%",
+              maxWidth: "480px",
+              background: "rgba(22, 18, 46, 0.95)",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
+              borderRadius: "24px",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.55), 0 0 40px rgba(16, 185, 129, 0.15)",
+              padding: "40px 30px",
+              textAlign: "center",
+              fontFamily: "'Inter', sans-serif",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{
+              position: "absolute",
+              top: "-20%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: "200px",
+              height: "200px",
+              background: "rgba(16, 185, 129, 0.2)",
+              borderRadius: "50%",
+              filter: "blur(40px)",
+              pointerEvents: "none",
+              zIndex: 0,
+            }} />
+
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{
+                width: "80px",
+                height: "80px",
+                borderRadius: "50%",
+                background: "rgba(16, 185, 129, 0.1)",
+                border: "2px solid #10B981",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 24px auto",
+              }}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="#10B981" style={{ width: "36px", height: "36px" }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+              </div>
+
+              <h2 style={{
+                fontSize: "26px",
+                fontWeight: "800",
+                color: "#FFF",
+                marginBottom: "12px",
+                fontFamily: "'Orbitron', sans-serif",
+                letterSpacing: "0.5px",
+              }}>
+                Paiement Réussi !
+              </h2>
+              
+              <p style={{
+                fontSize: "15px",
+                color: "#94A3B8",
+                lineHeight: "1.6",
+                marginBottom: "32px",
+              }}>
+                Félicitations ! Votre abonnement au plan{" "}
+                <strong style={{ color: "#10B981" }}>
+                  {paymentDetails?.plan === "recruiter_pro" ? "Recruteur Pro" : "Candidat Premium"}
+                </strong>{" "}
+                a été activé avec succès via {paymentDetails?.provider === "fedapay" ? "Mobile Money" : "Stripe"}.
+              </p>
+
+              <button
+                onClick={() => {
+                  setShowPaymentSuccessModal(false);
+                  setView("hero");
+                }}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  background: "linear-gradient(135deg, #10B981, #059669)",
+                  border: "none",
+                  borderRadius: "12px",
+                  color: "#FFF",
+                  fontWeight: "700",
+                  fontSize: "15px",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)",
+                  transition: "all 0.2s",
+                }}
+              >
+                Commencer à explorer
+              </button>
             </div>
           </div>
         </div>

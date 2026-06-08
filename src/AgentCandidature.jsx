@@ -675,6 +675,264 @@ const initialCvProfile = {
   }
 };
 
+// ── CANDIDATE CHAT COMPONENT ──────────────────────────────────────────────────
+const CandidateChat = ({ candidature, user, token }) => {
+  const [messages, setMessages] = useState([]);
+  const [inputText, setInputText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
+  const messagesEndRef = useRef(null);
+
+  const isSupabaseConfigured =
+    supabase &&
+    supabase.supabaseUrl &&
+    !supabase.supabaseUrl.includes("your-project.supabase.co");
+
+  const getLocalChatKey = () => `mock_chat_${candidature.id}`;
+
+  const loadChat = async () => {
+    if (!isSupabaseConfigured || !user) {
+      // Offline/Local Mock Fallback
+      const key = getLocalChatKey();
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setMessages(JSON.parse(saved));
+      } else {
+        const initialMsgs = [
+          {
+            id: "mock_1",
+            sender: "recruiter",
+            text: `Bonjour, merci pour votre candidature au poste de ${candidature.poste} chez ${candidature.entreprise}. Nous étudions votre dossier. Avez-vous des questions ?`,
+            created_at: new Date().toISOString()
+          }
+        ];
+        setMessages(initialMsgs);
+        localStorage.setItem(key, JSON.stringify(initialMsgs));
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Find or create conversation
+      const { data: convs, error: convErr } = await supabase
+        .from("candidate_conversations")
+        .select("id")
+        .eq("candidate_id", user.id)
+        .eq("candidature_id", candidature.id);
+
+      if (convErr) throw convErr;
+
+      let activeConvId = null;
+      if (convs && convs.length > 0) {
+        activeConvId = convs[0].id;
+      } else {
+        const { data: newConv, error: createErr } = await supabase
+          .from("candidate_conversations")
+          .insert({
+            candidate_id: user.id,
+            candidature_id: candidature.id,
+            subject: `Candidature - ${candidature.poste} chez ${candidature.entreprise}`,
+            type: "Application",
+            status: "New"
+          })
+          .select("id")
+          .single();
+        if (createErr) throw createErr;
+        activeConvId = newConv.id;
+      }
+
+      setConversationId(activeConvId);
+
+      const { data: msgs, error: msgErr } = await supabase
+        .from("conversation_messages")
+        .select("*")
+        .eq("conversation_id", activeConvId)
+        .order("created_at", { ascending: true });
+
+      if (msgErr) throw msgErr;
+      setMessages(msgs || []);
+    } catch (err) {
+      console.error("Erreur chargement chat Supabase:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadChat();
+  }, [candidature.id, user]);
+
+  // Real-time listener
+  useEffect(() => {
+    if (!isSupabaseConfigured || !conversationId) return;
+
+    const channel = supabase
+      .channel(`chat_${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "conversation_messages",
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === payload.new.id)) return prev;
+            return [...prev, payload.new];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
+
+  // Auto scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    const text = inputText.trim();
+    if (!text) return;
+
+    setInputText("");
+
+    if (!isSupabaseConfigured || !user) {
+      // Local Storage mock insert
+      const newMsg = {
+        id: `mock_${Date.now()}`,
+        sender: "candidate",
+        text,
+        created_at: new Date().toISOString()
+      };
+      const updated = [...messages, newMsg];
+      setMessages(updated);
+      localStorage.setItem(getLocalChatKey(), JSON.stringify(updated));
+
+      // Simulate a recruiter reply after 2 seconds for local demonstration!
+      setTimeout(() => {
+        const reply = {
+          id: `mock_${Date.now() + 1}`,
+          sender: "recruiter",
+          text: `Merci pour votre retour ! C'est bien noté. Nous revenons vers vous rapidement.`,
+          created_at: new Date().toISOString()
+        };
+        const withReply = [...updated, reply];
+        setMessages(withReply);
+        localStorage.setItem(getLocalChatKey(), JSON.stringify(withReply));
+      }, 2000);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("conversation_messages")
+        .insert({
+          conversation_id: conversationId,
+          sender: "candidate",
+          text
+        });
+      if (error) throw error;
+
+      const { data: msgs } = await supabase
+        .from("conversation_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+      if (msgs) setMessages(msgs);
+    } catch (err) {
+      console.error("Erreur envoi message:", err);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "420px", background: "rgba(10, 8, 22, 0.6)", borderRadius: "12px", border: "1px solid rgba(168, 85, 247, 0.15)", overflow: "hidden" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#94A3B8" }}>
+            Chargement de la conversation...
+          </div>
+        ) : messages.length === 0 ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#94A3B8", fontSize: "12px" }}>
+            Aucun message. Envoyez votre premier message ci-dessous.
+          </div>
+        ) : (
+          messages.map((m) => {
+            const isCandidate = m.sender === "candidate";
+            return (
+              <div
+                key={m.id}
+                style={{
+                  alignSelf: isCandidate ? "flex-end" : "flex-start",
+                  maxWidth: "80%",
+                  background: isCandidate ? "rgba(0, 240, 255, 0.08)" : "rgba(168, 85, 247, 0.08)",
+                  border: isCandidate ? "1px solid rgba(0, 240, 255, 0.3)" : "1px solid rgba(168, 85, 247, 0.3)",
+                  color: "#F8FAFC",
+                  padding: "10px 14px",
+                  borderRadius: "12px",
+                  borderBottomRightRadius: isCandidate ? "2px" : "12px",
+                  borderBottomLeftRadius: isCandidate ? "12px" : "2px",
+                  fontSize: "12px",
+                  lineHeight: "1.4"
+                }}
+              >
+                <div style={{ fontSize: "9px", color: isCandidate ? "#00F0FF" : "#A855F7", fontWeight: "700", marginBottom: "4px" }}>
+                  {isCandidate ? "Vous" : "Recruteur"}
+                </div>
+                <div>{m.text}</div>
+                <div style={{ fontSize: "8px", color: "#64748B", marginTop: "4px", textAlign: "right" }}>
+                  {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <form onSubmit={handleSend} style={{ borderTop: "1px solid rgba(168, 85, 247, 0.15)", padding: "10px", display: "flex", gap: "8px", background: "rgba(6, 5, 12, 0.8)" }}>
+        <input
+          type="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder="Écrivez un message pour le recruteur..."
+          style={{
+            flex: 1,
+            background: "rgba(10, 8, 22, 0.8)",
+            border: "1px solid rgba(168, 85, 247, 0.2)",
+            borderRadius: "8px",
+            color: "#fff",
+            padding: "8px 12px",
+            fontSize: "12px",
+            outline: "none"
+          }}
+        />
+        <button
+          type="submit"
+          style={{
+            background: "rgba(0, 240, 255, 0.15)",
+            border: "1px solid rgba(0, 240, 255, 0.4)",
+            color: "#00F0FF",
+            borderRadius: "8px",
+            padding: "8px 14px",
+            fontSize: "12px",
+            cursor: "pointer",
+            fontWeight: "600"
+          }}
+        >
+          Envoyer ✉️
+        </button>
+      </form>
+    </div>
+  );
+};
+
 // ── COMPOSANT PRINCIPAL ───────────────────────────────────────────────────────
 export default function AgentCandidature({
   initialView = "builder",
@@ -2919,34 +3177,34 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                             {(() => {
                               const tpl = LETTER_TEMPLATES.find(t => t.id === selectedLetterTemplate) || LETTER_TEMPLATES[0];
                               const Comp = tpl.component;
-                            const activeCv = cvProfile || {};
-                            const identite = activeCv.identite || {};
-                            const ana = analyse || {};
-                            const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
-                            const senderName = `${infos.prenom || ""} ${infos.nom || ""}`.trim();
-                            const senderEmail = identite.email || infos.email || "";
-                            const senderTel = identite.telephone || infos.tel || "";
-                            const senderVille = identite.ville || infos.ville || "";
-                            const destEntreprise = ana.entreprise || "";
-                            const destPoste = ana.poste || "";
-                            const destLieu = ana.lieu || "";
-                            const objet = objetLettre || `Candidature au poste de ${destPoste}${destEntreprise ? " — " + destEntreprise : ""}`;
+                              const activeCv = cvProfile || {};
+                              const identite = activeCv.identite || {};
+                              const ana = analyse || {};
+                              const dateStr = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
+                              const senderName = `${infos.prenom || ""} ${infos.nom || ""}`.trim();
+                              const senderEmail = identite.email || infos.email || "";
+                              const senderTel = identite.telephone || infos.tel || "";
+                              const senderVille = identite.ville || infos.ville || "";
+                              const destEntreprise = ana.entreprise || "";
+                              const destPoste = ana.poste || "";
+                              const destLieu = ana.lieu || "";
+                              const objet = objetLettre || `Candidature au poste de ${destPoste}${destEntreprise ? " — " + destEntreprise : ""}`;
 
-                            return (
-                              <Comp
-                                body={renderLetterBody(lettre)}
-                                senderName={senderName}
-                                senderEmail={senderEmail}
-                                senderTel={senderTel}
-                                senderVille={senderVille}
-                                destEntreprise={destEntreprise}
-                                destPoste={destPoste}
-                                destLieu={destLieu}
-                                objet={objet}
-                                dateStr={dateStr}
-                              />
-                            );
-                          })()}
+                              return (
+                                <Comp
+                                  body={renderLetterBody(lettre)}
+                                  senderName={senderName}
+                                  senderEmail={senderEmail}
+                                  senderTel={senderTel}
+                                  senderVille={senderVille}
+                                  destEntreprise={destEntreprise}
+                                  destPoste={destPoste}
+                                  destLieu={destLieu}
+                                  objet={objet}
+                                  dateStr={dateStr}
+                                />
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -3859,6 +4117,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                   { id: "documents", label: "📄 Documents", },
                   { id: "tracker", label: "📈 Pipeline" },
                   { id: "reminders", label: "🔔 Rappels" },
+                  { id: "chat", label: "💬 Chat Recruteur" },
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -4067,6 +4326,17 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                     </Section>
                   </div>
                 )}
+
+                {/* Chat Tab */}
+                {activeDashboardTab === "chat" && (
+                  <div className="slide">
+                    <CandidateChat
+                      candidature={selectedCandidature}
+                      user={user}
+                      token={token}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -4119,11 +4389,11 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
 
           return (
             <div className="m-overlay" onClick={() => setPreviewingTemplate(null)} style={{ zIndex: 1200 }}>
-              <div 
-                className="m-content" 
-                onClick={e => e.stopPropagation()} 
-                style={{ 
-                  maxWidth: 950, 
+              <div
+                className="m-content"
+                onClick={e => e.stopPropagation()}
+                style={{
+                  maxWidth: 950,
                   height: "90vh",
                   background: "rgba(10, 8, 22, 0.95)",
                   border: `1px solid ${C.accent}40`,
@@ -4132,10 +4402,10 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
               >
                 {/* Modal Header */}
                 <div style={{
-                  padding: "16px 24px", 
+                  padding: "16px 24px",
                   borderBottom: `1px solid ${C.border}`,
-                  display: "flex", 
-                  alignItems: "center", 
+                  display: "flex",
+                  alignItems: "center",
                   justifyContent: "space-between",
                 }}>
                   <div>

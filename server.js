@@ -7,8 +7,12 @@ import * as imapService from "./imapService.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
+import fedapayPkg from "fedapay";
 
 dotenv.config();
+
+const { FedaPay, Transaction, Webhook: FedaPayWebhook } = fedapayPkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,15 +20,30 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.use(cors({ origin: "http://localhost:5173" }));
-app.use(express.json({ limit: "2mb" }));
+
+// Capture raw body buffer for Stripe and FedaPay Webhook signature verification
+app.use(express.json({
+  limit: "2mb",
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-// Initialize Supabase Server client safely
-const supabaseServer = (process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_ANON_KEY)
-  ? createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
+// Initialize payment integrations
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+if (process.env.FEDAPAY_SECRET_KEY) {
+  FedaPay.setApiKey(process.env.FEDAPAY_SECRET_KEY);
+  FedaPay.setEnvironment("sandbox"); // sandbox for test payments
+}
+
+// Initialize Supabase Server client safely (uses Service Role Key if available to bypass RLS in webhooks)
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServer = (process.env.VITE_SUPABASE_URL && supabaseServiceKey)
+  ? createClient(process.env.VITE_SUPABASE_URL, supabaseServiceKey)
   : null;
 
 // JWT Verification Middleware
@@ -244,6 +263,320 @@ app.post("/api/gmail/disconnect", checkAuth, (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// ── Payments Integration Endpoints ───────────────────────────────────────────
+
+// Helper to fetch or create user profiles record in Supabase
+const getOrCreateProfile = async (userId) => {
+  if (!supabaseServer) return null;
+  const { data: profile, error } = await supabaseServer
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching profile:", error);
+    return null;
+  }
+
+  if (profile) return profile;
+
+  // Create new profile record if missing
+  const { data: newProfile, error: insertError } = await supabaseServer
+    .from("profiles")
+    .insert([{ id: userId, subscription_tier: "free" }])
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error("Error creating profile:", insertError);
+    return null;
+  }
+  return newProfile;
+};
+
+// 1. Stripe Checkout Session Creator
+app.post("/api/payment/stripe/create-session", checkAuth, async (req, res) => {
+  try {
+    const { priceId } = req.body;
+    if (!priceId) {
+      return res.status(400).json({ error: "priceId est requis." });
+    }
+
+    const profile = await getOrCreateProfile(req.user.id);
+    let stripeCustomerId = profile?.stripe_customer_id;
+
+    if (!stripeCustomerId) {
+      // Create Stripe customer
+      const customer = await stripe.customers.create({
+        email: req.user.email,
+        metadata: { userId: req.user.id }
+      });
+      stripeCustomerId = customer.id;
+
+      // Update Supabase profile
+      if (supabaseServer) {
+        await supabaseServer
+          .from("profiles")
+          .update({ stripe_customer_id: stripeCustomerId })
+          .eq("id", req.user.id);
+      }
+    }
+
+    // Create Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      customer: stripeCustomerId,
+      payment_method_types: ["card", "link", "sepa_debit"],
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: "subscription",
+      success_url: `http://localhost:5173/?payment=success&provider=stripe`,
+      cancel_url: `http://localhost:5173/?payment=cancel`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error("Stripe create-session error:", err);
+    res.status(500).json({ error: err.message || "Erreur lors de la création de la session Stripe." });
+  }
+});
+
+// 2. Stripe Customer Portal Session Creator
+app.post("/api/payment/stripe/create-portal", checkAuth, async (req, res) => {
+  try {
+    const profile = await getOrCreateProfile(req.user.id);
+    const stripeCustomerId = profile?.stripe_customer_id;
+    if (!stripeCustomerId) {
+      return res.status(400).json({ error: "Aucun profil Stripe trouvé pour cet utilisateur." });
+    }
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: "http://localhost:5173/",
+    });
+
+    res.json({ url: portalSession.url });
+  } catch (err) {
+    console.error("Stripe create-portal error:", err);
+    res.status(500).json({ error: err.message || "Erreur lors de la création du portail Stripe." });
+  }
+});
+
+// 3. FedaPay Session Creator (Mobile Money)
+app.post("/api/payment/fedapay/create-session", checkAuth, async (req, res) => {
+  try {
+    const { amount, planId } = req.body;
+    if (!amount || !planId) {
+      return res.status(400).json({ error: "amount et planId sont requis." });
+    }
+
+    const fullName = req.user.user_metadata?.full_name || "Utilisateur MIKA";
+    const names = fullName.split(" ");
+    const firstname = names[0] || "MIKA";
+    const lastname = names.slice(1).join(" ") || "User";
+
+    // Create FedaPay transaction
+    const transaction = await Transaction.create({
+      description: `Abonnement MIKA Plan: ${planId}`,
+      amount: amount,
+      currency: { iso: "XOF" }, // West African CFA Franc
+      callback_url: `http://localhost:5173/?payment=success&provider=fedapay&plan=${planId}`,
+      customer: {
+        firstname: firstname,
+        lastname: lastname,
+        email: req.user.email,
+      },
+      metadata: {
+        userId: req.user.id,
+        planId: planId
+      }
+    });
+
+    const token = await transaction.generateToken();
+    res.json({ url: token.url });
+  } catch (err) {
+    console.error("FedaPay create-session error:", err);
+    res.status(500).json({ error: err.message || "Erreur lors de la création de la transaction FedaPay." });
+  }
+});
+
+// 4. Stripe Webhook Handler
+app.post("/api/payment/stripe/webhook", async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.rawBody,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET || ""
+    );
+  } catch (err) {
+    console.error("Stripe Webhook Signature error:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  console.log(`⚡ Stripe Webhook Event: ${event.type}`);
+
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const stripeCustomerId = session.customer;
+      const stripeSubscriptionId = session.subscription;
+
+      // Fetch subscription details
+      const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+      const priceId = subscription.items.data[0].price.id;
+      
+      let tier = "free";
+      if (priceId === "price_premium" || priceId.includes("premium")) {
+        tier = "premium";
+      } else if (priceId === "price_recruiter" || priceId.includes("recruiter")) {
+        tier = "recruiter_pro";
+      }
+
+      if (supabaseServer) {
+        const { data: profile } = await supabaseServer
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", stripeCustomerId)
+          .maybeSingle();
+
+        if (profile) {
+          await supabaseServer.from("subscriptions").upsert({
+            id: stripeSubscriptionId,
+            user_id: profile.id,
+            status: subscription.status,
+            payment_provider: "stripe",
+            price_id: priceId,
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          });
+
+          await supabaseServer
+            .from("profiles")
+            .update({ subscription_tier: tier })
+            .eq("id", profile.id);
+        }
+      }
+    } else if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object;
+      const stripeCustomerId = subscription.customer;
+
+      let tier = "free";
+      if (subscription.status === "active" || subscription.status === "trialing") {
+        const priceId = subscription.items.data[0].price.id;
+        if (priceId === "price_premium" || priceId.includes("premium")) {
+          tier = "premium";
+        } else if (priceId === "price_recruiter" || priceId.includes("recruiter")) {
+          tier = "recruiter_pro";
+        }
+      }
+
+      if (supabaseServer) {
+        const { data: profile } = await supabaseServer
+          .from("profiles")
+          .select("id")
+          .eq("stripe_customer_id", stripeCustomerId)
+          .maybeSingle();
+
+        if (profile) {
+          if (subscription.status === "deleted") {
+            await supabaseServer.from("subscriptions").delete().eq("id", subscription.id);
+            await supabaseServer
+              .from("profiles")
+              .update({ subscription_tier: "free" })
+              .eq("id", profile.id);
+          } else {
+            await supabaseServer.from("subscriptions").upsert({
+              id: subscription.id,
+              user_id: profile.id,
+              status: subscription.status,
+              payment_provider: "stripe",
+              price_id: subscription.items.data[0].price.id,
+              cancel_at_period_end: subscription.cancel_at_period_end,
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            });
+            await supabaseServer
+              .from("profiles")
+              .update({ subscription_tier: tier })
+              .eq("id", profile.id);
+          }
+        }
+      }
+    }
+  } catch (dbErr) {
+    console.error("Database update error inside Stripe webhook:", dbErr);
+  }
+
+  res.json({ received: true });
+});
+
+// 5. FedaPay Webhook Handler
+app.post("/api/payment/fedapay/webhook", async (req, res) => {
+  const sig = req.headers["x-fedapay-signature"];
+  let event;
+
+  try {
+    event = FedaPayWebhook.constructEvent(
+      req.rawBody,
+      sig,
+      process.env.FEDAPAY_WEBHOOK_SECRET || ""
+    );
+  } catch (err) {
+    console.error("FedaPay Webhook Signature error:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  console.log(`⚡ FedaPay Webhook Event: ${event.name}`);
+
+  try {
+    if (event.name === "transaction.approved") {
+      const transaction = event.data;
+      const userId = transaction.metadata?.userId;
+      const planId = transaction.metadata?.planId;
+
+      if (userId && planId && supabaseServer) {
+        let tier = "free";
+        if (planId === "premium") {
+          tier = "premium";
+        } else if (planId === "recruiter_pro") {
+          tier = "recruiter_pro";
+        }
+
+        // Update profile
+        await supabaseServer
+          .from("profiles")
+          .update({ 
+            subscription_tier: tier,
+            fedapay_customer_id: String(transaction.customer_id || "")
+          })
+          .eq("id", userId);
+
+        // Record active subscription
+        const oneMonthLater = new Date();
+        oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+
+        await supabaseServer.from("subscriptions").upsert({
+          id: `fedapay_${transaction.id}`,
+          user_id: userId,
+          status: "active",
+          payment_provider: "fedapay",
+          price_id: planId,
+          cancel_at_period_end: false,
+          current_period_start: new Date().toISOString(),
+          current_period_end: oneMonthLater.toISOString(),
+        });
+      }
+    }
+  } catch (dbErr) {
+    console.error("Database update error inside FedaPay webhook:", dbErr);
+  }
+
+  res.json({ received: true });
 });
 
 // Serve frontend static build files in production

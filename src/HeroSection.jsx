@@ -7,6 +7,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
     { name: "Accueil", view: "hero", hasDropdown: false },
     { name: "Optimiseur & Studio", view: "builder", hasDropdown: false },
     { name: "Modèles & Designs", view: "templates", hasDropdown: false },
+    { name: "Tarifs", view: "pricing", hasDropdown: false },
     { name: "Blog", view: "blog", hasDropdown: false },
     { name: "About", view: "about", hasDropdown: false },
     { name: "Espace Recruteur", view: "recruiter", hasDropdown: false },
@@ -16,18 +17,16 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
   }
 
   return (
-    <div className="relative min-height-screen bg-[var(--color-brand-bg)] overflow-hidden font-sans select-none">
+    <div className="relative min-h-screen bg-[var(--color-brand-bg)] overflow-hidden font-sans select-none flex flex-col">
       
       {/* ── Background Blurred Blobs ── */}
       <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] bg-[var(--color-brand-pink-blob)] rounded-full blur-[110px] pointer-events-none z-0"></div>
       <div className="absolute top-[20%] right-[-10%] w-[550px] h-[550px] bg-[var(--color-brand-blue-blob)] rounded-full blur-[130px] pointer-events-none z-0"></div>
       <div className="absolute bottom-[-10%] left-[25%] w-[400px] h-[400px] bg-[var(--color-brand-purple-blob)] rounded-full blur-[100px] pointer-events-none z-0"></div>
 
-      {/* ── Container ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-20 min-h-screen flex flex-col justify-between">
-        
-        {/* ── Navigation Header ── */}
-        <header className="flex items-center justify-between py-6 md:py-8 border-b border-gray-100/50 bg-blue-900 rounded-lg px-4 shadow-md">
+      {/* ── Navigation Header (Full Width Glassmorphic) ── */}
+      <header className="relative z-20 w-full border-b border-gray-200/50 bg-white/70 backdrop-blur-md shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-4 flex items-center justify-between">
           
           {/* Logo */}
           <div 
@@ -140,7 +139,11 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
               )}
             </button>
           </div>
-        </header>
+        </div>
+      </header>
+
+      {/* ── Main Layout Container ── */}
+      <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-20 flex-1 flex flex-col justify-between">
 
         {/* ── Backdrop Overlay ── */}
         {isMobileMenuOpen && (

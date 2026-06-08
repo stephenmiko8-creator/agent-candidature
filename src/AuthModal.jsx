@@ -24,6 +24,12 @@ export default function AuthModal({ onAuthSuccess, onCancel }) {
     setSuccessMsg("");
     setLoading(true);
 
+    if (!isSupabaseConfigured) {
+      setErrorMsg("Supabase n'est pas configuré. Renseignez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans le fichier .env pour activer la création de compte par email. En attendant, vous pouvez utiliser les boutons de Connexion Démo ci-dessous.");
+      setLoading(false);
+      return;
+    }
+
     if (!email || !password) {
       setErrorMsg("Veuillez remplir tous les champs.");
       setLoading(false);
@@ -70,11 +76,24 @@ export default function AuthModal({ onAuthSuccess, onCancel }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#06050C]/80 backdrop-blur-md z-[10000] flex items-center justify-center font-sans">
-      <div className="bg-[#120E26]/85 border border-purple-500/20 rounded-2xl w-full max-w-4xl mx-4 shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_40px_rgba(112,38,232,0.08)] text-slate-50 flex overflow-hidden">
+    <div className="fixed inset-0 bg-[#06050C] z-[10000] flex font-sans overflow-hidden">
+      {/* Close/Back Button */}
+      {onCancel && (
+        <button 
+          onClick={onCancel}
+          className="absolute top-6 right-6 w-10.5 h-10.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center transition-all cursor-pointer z-50"
+          title="Retour à l'accueil"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
 
-        {/* Left Side: Image */}
-        <div className="hidden md:block md:w-1/2 relative bg-white flex items-center justify-center">
+      <div className="w-full min-h-screen text-slate-50 flex overflow-hidden">
+
+        {/* Left Side: Image (Full Bleed to Left, Top, and Bottom) */}
+        <div className="hidden md:block md:w-1/2 relative bg-white">
           <img
             src="/login-avatar.jpeg"
             alt="Login Avatar"
@@ -83,99 +102,101 @@ export default function AuthModal({ onAuthSuccess, onCancel }) {
         </div>
 
         {/* Right Side: Login Form */}
-        <div className="w-full md:w-1/2 p-8 md:p-10 flex flex-col justify-center">
-          <div className="flex items-center gap-3 mb-7">
-            <span className="w-9 h-9 bg-gradient-to-br from-[#7026E8] to-[#A855F7] rounded-lg flex items-center justify-center text-lg font-bold">⚡</span>
-            <div>
-              <div className="font-['Orbitron'] font-extrabold text-xl tracking-wider">MIKA</div>
-              <div className="text-[7.5px] text-[#00F0FF] tracking-[2.5px]">MY INTELLIGENT KAREER ASSISTANT</div>
-            </div>
-          </div>
-
-          <h2 className="text-2xl font-bold mb-2">{isSignUp ? "Créer un compte" : "Connexion Portail"}</h2>
-          <p className="text-sm text-slate-400 mb-6">
-            {isSignUp
-              ? "Rejoins MIKA pour propulser tes candidatures."
-              : "Connecte-toi pour accéder à ton studio et CRM."}
-          </p>
-
-          {errorMsg && <div className="bg-rose-500/10 border border-rose-500/25 text-[#FF4A70] px-4 py-3 rounded-lg text-sm mb-4">⚠️ {errorMsg}</div>}
-          {successMsg && <div className="bg-emerald-500/10 border border-emerald-500/25 text-[#00E699] px-4 py-3 rounded-lg text-sm mb-4">✅ {successMsg}</div>}
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-slate-400 font-medium">Adresse Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="marie.laurent@example.com"
-                className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-purple-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-purple-500/50 transition-colors"
-                required
-              />
+        <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center bg-[#120E26]/85 border-l border-purple-500/20 overflow-y-auto">
+          <div className="max-w-md mx-auto w-full flex flex-col my-auto">
+            <div className="flex items-center gap-3 mb-7">
+              <span className="w-9 h-9 bg-gradient-to-br from-[#7026E8] to-[#A855F7] rounded-lg flex items-center justify-center text-lg font-bold">⚡</span>
+              <div>
+                <div className="font-['Orbitron'] font-extrabold text-xl tracking-wider">MIKA</div>
+                <div className="text-[7.5px] text-[#00F0FF] tracking-[2.5px]">MY INTELLIGENT KAREER ASSISTANT</div>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-slate-400 font-medium">Mot de passe</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-purple-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-purple-500/50 transition-colors"
-                required
-              />
-            </div>
+            <h2 className="text-2xl font-bold mb-2">{isSignUp ? "Créer un compte" : "Connexion Portail"}</h2>
+            <p className="text-sm text-slate-400 mb-6">
+              {isSignUp
+                ? "Rejoins MIKA pour propulser tes candidatures."
+                : "Connecte-toi pour accéder à ton studio et CRM."}
+            </p>
 
-            <button type="submit" disabled={loading} className="mt-2 p-3 bg-gradient-to-r from-[#7026E8] to-[#A855F7] rounded-lg text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
-              {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
-            </button>
-          </form>
+            {errorMsg && <div className="bg-rose-500/10 border border-rose-500/25 text-[#FF4A70] px-4 py-3 rounded-lg text-sm mb-4">⚠️ {errorMsg}</div>}
+            {successMsg && <div className="bg-emerald-500/10 border border-emerald-500/25 text-[#00E699] px-4 py-3 rounded-lg text-sm mb-4">✅ {successMsg}</div>}
 
-          <div className="text-center text-xs text-slate-400 mt-4">
-            {isSignUp ? "Déjà membre ?" : "Nouveau sur MIKA ?"}{" "}
-            <span
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-[#00F0FF] font-semibold cursor-pointer hover:underline"
-            >
-              {isSignUp ? "Se connecter" : "Créer un compte"}
-            </span>
-          </div>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-400 font-medium">Adresse Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="marie.laurent@example.com"
+                  className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-purple-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-purple-500/50 transition-colors"
+                  required
+                />
+              </div>
 
-          {onCancel && (
-            <div className="text-center text-xs mt-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-400 font-medium">Mot de passe</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="px-3.5 py-2.5 bg-[#0A0816]/60 border border-purple-500/20 rounded-lg text-slate-50 text-sm outline-none focus:border-purple-500/50 transition-colors"
+                  required
+                />
+              </div>
+
+              <button type="submit" disabled={loading} className="mt-2 p-3 bg-gradient-to-r from-[#7026E8] to-[#A855F7] rounded-lg text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+                {loading ? "Chargement..." : isSignUp ? "S'inscrire" : "Se connecter"}
+              </button>
+            </form>
+
+            <div className="text-center text-xs text-slate-400 mt-4">
+              {isSignUp ? "Déjà membre ?" : "Nouveau sur MIKA ?"}{" "}
               <span
-                onClick={onCancel}
-                className="text-slate-400 cursor-pointer underline hover:text-[#00F0FF] transition-colors"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-[#00F0FF] font-semibold cursor-pointer hover:underline"
               >
-                Retour à l'accueil
+                {isSignUp ? "Se connecter" : "Créer un compte"}
               </span>
             </div>
-          )}
 
-          {/* Demo Mode / Bypass Section */}
-          {isLocal && (
-            <div className="mt-6 flex flex-col gap-2.5">
-              <div className="flex items-center text-center text-[10px] text-slate-400/40 uppercase tracking-widest mb-1">
-                <span className="flex-1 h-px bg-slate-400/10"></span>
-                <span className="px-3">Accès Développeur / Démo</span>
-                <span className="flex-1 h-px bg-slate-400/10"></span>
+            {onCancel && (
+              <div className="text-center text-xs mt-3">
+                <span
+                  onClick={onCancel}
+                  className="text-slate-400 cursor-pointer underline hover:text-[#00F0FF] transition-colors"
+                >
+                  Retour à l'accueil
+                </span>
               </div>
-              <div className="flex flex-col gap-2">
-                <button onClick={() => handleBypass("admin")} className="p-2.5 bg-cyan-400/10 border border-cyan-400/30 rounded-lg text-[#00F0FF] text-xs font-semibold hover:bg-cyan-400/20 transition-colors">
-                  ⚡ Connexion Admin (Renaud Miko)
-                </button>
-                <button onClick={() => handleBypass("candidate")} className="p-2.5 bg-slate-400/10 border border-slate-400/20 rounded-lg text-slate-400 text-xs font-semibold hover:bg-slate-400/20 transition-colors">
-                  👤 Connexion Candidat Standard
-                </button>
-              </div>
-              {!isSupabaseConfigured && (
-                <div className="text-[10px] text-purple-500/50 text-center mt-1 leading-tight">
-                  ℹ️ Supabase n'est pas encore configuré dans `.env`. Utilise le mode Démo pour tester l'application.
+            )}
+
+            {/* Demo Mode / Bypass Section */}
+            {isLocal && (
+              <div className="mt-6 flex flex-col gap-2.5">
+                <div className="flex items-center text-center text-[10px] text-slate-400/40 uppercase tracking-widest mb-1">
+                  <span className="flex-1 h-px bg-slate-400/10"></span>
+                  <span className="px-3">Accès Développeur / Démo</span>
+                  <span className="flex-1 h-px bg-slate-400/10"></span>
                 </div>
-              )}
-            </div>
-          )}
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => handleBypass("admin")} className="p-2.5 bg-cyan-400/10 border border-cyan-400/30 rounded-lg text-[#00F0FF] text-xs font-semibold hover:bg-cyan-400/20 transition-colors">
+                    ⚡ Connexion Admin (Renaud Miko)
+                  </button>
+                  <button onClick={() => handleBypass("candidate")} className="p-2.5 bg-slate-400/10 border border-slate-400/20 rounded-lg text-slate-400 text-xs font-semibold hover:bg-slate-400/20 transition-colors">
+                    👤 Connexion Candidat Standard
+                  </button>
+                </div>
+                {!isSupabaseConfigured && (
+                  <div className="text-[10px] text-purple-500/50 text-center mt-1 leading-tight">
+                    ℹ️ Supabase n'est pas encore configuré dans `.env`. Utilise le mode Démo pour tester l'application.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
