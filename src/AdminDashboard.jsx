@@ -11,11 +11,11 @@ export default function AdminDashboard() {
       email: "marie.l@gmail.com",
       type: "Bug Report",
       subject: "Problème d'importation de CV PDF complexe",
-      content: "Bonjour MIKA team, j'ai tenté d'importer mon CV au format PDF généré par Canva, mais le parser a ignoré mes expériences de 2021. Est-il possible d'ajuster l'analyse ?",
+      content: "Bonjour StaJob team, j'ai tenté d'importer mon CV au format PDF généré par Canva, mais le parser a ignoré mes expériences de 2021. Est-il possible d'ajuster l'analyse ?",
       status: "Open",
       date: "07 Juin 2026, 14:32",
       replies: [
-        { sender: "user", text: "Bonjour MIKA team, j'ai tenté d'importer mon CV au format PDF généré par Canva, mais le parser a ignoré mes expériences de 2021. Est-il possible d'ajuster l'analyse ?" }
+        { sender: "user", text: "Bonjour StaJob team, j'ai tenté d'importer mon CV au format PDF généré par Canva, mais le parser a ignoré mes expériences de 2021. Est-il possible d'ajuster l'analyse ?" }
       ]
     },
     {
@@ -23,12 +23,12 @@ export default function AdminDashboard() {
       user: "Pierre Dubois",
       email: "pierre.dubois@gmail.com",
       type: "Claim",
-      subject: "Limite de jetons d'IA de MIKA atteinte",
-      content: "Bonjour, je suis très satisfait de MIKA, mais j'ai épuisé mon crédit d'optimisation IA aujourd'hui. Est-il possible d'avoir un bonus pour finaliser ma candidature de cet après-midi ?",
+      subject: "Limite de jetons d'IA de StaJob atteinte",
+      content: "Bonjour, je suis très satisfait de StaJob, mais j'ai épuisé mon crédit d'optimisation IA aujourd'hui. Est-il possible d'avoir un bonus pour finaliser ma candidature de cet après-midi ?",
       status: "Open",
       date: "07 Juin 2026, 11:15",
       replies: [
-        { sender: "user", text: "Bonjour, je suis très satisfait de MIKA, mais j'ai épuisé mon crédit d'optimisation IA aujourd'hui. Est-il possible d'avoir un bonus pour finaliser ma candidature de cet après-midi ?" }
+        { sender: "user", text: "Bonjour, je suis très satisfait de StaJob, mais j'ai épuisé mon crédit d'optimisation IA aujourd'hui. Est-il possible d'avoir un bonus pour finaliser ma candidature de cet après-midi ?" }
       ]
     },
     {
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
     { id: "overview", icon: "📊", label: "Vue d'ensemble" },
     { id: "claims", icon: "✉️", label: "Support & Réclamations", count: messages.filter(m => m.status !== "Resolved").length },
     { id: "users", icon: "👥", label: "Comptes Utilisateurs" },
-    { id: "settings", icon: "⚙️", label: "Configuration MIKA" },
+    { id: "settings", icon: "⚙️", label: "Configuration StaJob" },
   ];
 
   return (
@@ -96,8 +96,8 @@ export default function AdminDashboard() {
         <div style={styles.navLogo}>
           <div style={styles.logoIcon}>⚙️</div>
           <div>
-            <div style={styles.logoText}>MIKA ADMIN</div>
-            <div style={styles.logoSub}>My Intelligent Karriere Assistant Platform</div>
+            <div style={styles.logoText}>StaJob ADMIN</div>
+            <div style={styles.logoSub}>VOTRE AGENT DE CARRIÈRE INTELLIGENT</div>
           </div>
           <span style={styles.adminBadge}>👑 Admin</span>
         </div>
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
               <div style={styles.pageHeader}>
                 <div>
                   <div style={styles.pageTitle}>Tableau de bord de l'administrateur</div>
-                  <div style={styles.pageSub}>Statistiques globales et santé de la plateforme MIKA</div>
+                  <div style={styles.pageSub}>Statistiques globales et santé de la plateforme StaJob</div>
                 </div>
               </div>
 
@@ -318,7 +318,7 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 <div style={{ fontSize: 10, opacity: 0.8, marginBottom: 4, fontWeight: 700 }}>
-                                  {isAdmin ? "MIKA Support Desk" : ticket.user}
+                                  {isAdmin ? "StaJob Support Desk" : ticket.user}
                                 </div>
                                 {r.text}
                               </div>
@@ -374,7 +374,7 @@ export default function AdminDashboard() {
               <div style={styles.pageHeader}>
                 <div>
                   <div style={styles.pageTitle}>👥 Comptes Utilisateurs</div>
-                  <div style={styles.pageSub}>Liste des candidats inscrits sur la plateforme MIKA</div>
+                  <div style={styles.pageSub}>Liste des candidats inscrits sur la plateforme StaJob</div>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

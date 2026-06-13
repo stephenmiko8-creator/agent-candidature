@@ -1,6 +1,6 @@
-# 📘 Guide de Développement SaaS - L'Expérience MIKA
+# 📘 Guide de Développement SaaS - L'Expérience StaJob
 
-Ce document retrace le parcours de conception, d'architecture et de développement de l'application **MIKA** (My Intelligent Kareer Assistant). Il sert de base et de plan détaillé pour la création de votre livre et de votre formation sur la création d'un SaaS moderne.
+Ce document retrace le parcours de conception, d'architecture et de développement de l'application **StaJob** (Votre Agent de Carrière Intelligent). Il sert de base et de plan détaillé pour la création de votre livre et de votre formation sur la création d'un SaaS moderne.
 
 ---
 
@@ -32,7 +32,7 @@ L'application repose sur un écosystème moderne, performant et hautement scalab
 *   **Le problème** : La gestion des tickets de support (pannes, demandes de jetons IA) était initialement mélangée avec les espaces de recrutement.
 *   **La solution** : découplage complet de l'architecture :
     *   **Espace Recruteur** : Uniquement dédié aux interactions avec les candidats (chats de recrutement, planification d'entretiens).
-    *   **Console Admin MIKA** : Un tableau de bord d'administration réservé uniquement à l'adresse du propriétaire (`renaudmiko90@gmail.com`) pour suivre les KPIs globaux de la plateforme et répondre aux demandes de support techniques.
+    *   **Console Admin StaJob** : Un tableau de bord d'administration réservé uniquement à l'adresse du propriétaire (`renaudmiko90@gmail.com`) pour suivre les KPIs globaux de la plateforme et répondre aux demandes de support techniques.
 
 ### Jalon 5 : Sécurisation pour la Production (Render)
 *   **Sécurité** : Intégration d'un sélecteur de mode de développement (`isLocal`). Le mode de connexion rapide (Bypass) n'apparaît que lors du développement sur votre ordinateur (`localhost`). Dès que le site est compilé et hébergé en ligne sur **Render**, l'authentification stricte par mot de passe Supabase prend le relais.
@@ -47,7 +47,7 @@ L'application repose sur un écosystème moderne, performant et hautement scalab
 ## 💡 3. Leçons Clés pour les Futurs Développeurs SaaS (Contenu du Livre/Formation)
 
 1.  **Concevoir pour le local d'abord** : Utilisez des états simulés et des mocks de données (comme nos boutons de connexion Admin/Candidat locale) pour accélérer le développement et les tests unitaires visuels sans dépendre d'une connexion internet.
-2.  **La gestion de l'état asynchrone** : Toujours prévoir un mode dégradé (fallback). Si la base de données Supabase est injoignable, l'application MIKA bascule automatiquement sur le stockage local pour ne jamais bloquer l'utilisateur.
+2.  **La gestion de l'état asynchrone** : Toujours prévoir un mode dégradé (fallback). Si la base de données Supabase est injoignable, l'application StaJob bascule automatiquement sur le stockage local pour ne jamais bloquer l'utilisateur.
 3.  **Protéger les données dès le premier jour** : L'utilisation de RLS dans PostgreSQL évite d'écrire des dizaines de lignes de code de vérification complexes dans le frontend. La base de données rejette elle-même les requêtes frauduleuses.
 4.  **Hébergement hybride** : Render et GitHub forment un combo parfait pour le déploiement continu (CI/CD). Un simple `git push` suffit à mettre à jour l'application en moins de 2 minutes.
 5.  **Multi-Gateway & Localisation de Paiement** : Intégrer dès le départ des solutions de paiement adaptées au marché cible (Stripe pour l'international et les cryptos stables, FedaPay pour les wallets Mobile Money locaux).

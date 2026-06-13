@@ -81,11 +81,11 @@ export default function BlogPage({ onBack }) {
           </svg>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: 24, letterSpacing: "0.05em", color: "#FFF", lineHeight: 1.0 }}>MIKA</span>
+              <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: 24, letterSpacing: "0.05em", color: "#FFF", lineHeight: 1.0 }}>StaJob</span>
               <span style={styles.blogBadge}>BLOG</span>
             </div>
             <div style={{ fontSize: 8, color: "#7026E8", fontFamily: "'Orbitron', sans-serif", fontWeight: 300, letterSpacing: "2.5px", marginTop: 4 }}>
-              MY INTELLIGENT KAREER ASSISTANT
+              VOTRE AGENT DE CARRIÈRE INTELLIGENT
             </div>
           </div>
         </div>
@@ -93,12 +93,12 @@ export default function BlogPage({ onBack }) {
           ↩ Retour Accueil
         </button>
       </header>
-
+ 
       <main style={styles.main}>
         <div style={styles.heroSection}>
           <h1 style={styles.title}>Blog & Ressources Carrière</h1>
           <p style={styles.subtitle}>
-            Optimisez vos outils de recherche d'emploi et restez au fait des technologies de recrutement grâce aux analyses de l'IA MIKA.
+            Optimisez vos outils de recherche d'emploi et restez au fait des technologies de recrutement grâce aux analyses de l'IA StaJob.
           </p>
         </div>
 

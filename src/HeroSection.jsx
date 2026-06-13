@@ -50,10 +50,10 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
             </svg>
             <div className="flex flex-col">
               <span className="font-bold text-[28px] tracking-wider text-[var(--color-brand-dark)] leading-none" style={{ fontFamily: "'Orbitron', sans-serif" }}>
-                MIKA
+                StaJob
               </span>
               <span className="text-[8.5px] font-light text-[var(--color-brand-purple)] tracking-[3.5px] mt-1 uppercase leading-none" style={{ fontFamily: "'Orbitron', sans-serif" }}>
-                MY INTELLIGENT KAREER ASSISTANT
+                VOTRE AGENT DE CARRIÈRE INTELLIGENT
               </span>
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
           <div className="flex items-center justify-between pb-4 border-b border-white/10">
             <div className="flex flex-col">
               <span className="font-bold text-[22px] text-white tracking-wider" style={{ fontFamily: "'Orbitron', sans-serif" }}>
-                MIKA
+                StaJob
               </span>
               <span className="text-[8px] text-[var(--color-brand-teal)] tracking-[2px] mt-0.5 font-light" style={{ fontFamily: "'Orbitron', sans-serif" }}>
                 KAREER CONTROL
@@ -249,7 +249,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
             </h1>
             
             <p className="text-[16px] md:text-[17px] text-[var(--color-brand-gray)] leading-relaxed font-medium max-w-lg">
-              MIKA (My Intelligent Kareer Assistant) helps you optimize CVs, analyze job offers, and land your dream job with AI power.
+              StaJob helps you optimize CVs, analyze job offers, and land your dream job with AI power.
             </p>
 
             {/* CTAs */}
@@ -290,7 +290,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
             {/* Illustration Image (without frame/container) */}
             <img
               src="/swipy-hero.png"
-              alt="MIKA AI Career Assistant Illustration"
+              alt="StaJob AI Career Assistant Illustration"
               className="relative z-10 w-full max-w-[480px] h-auto rounded-[32px] shadow-[0_20px_50px_rgba(112,38,232,0.2)] hover:scale-[1.02] transition-transform duration-700 ease-out object-cover"
             />
           </div>
@@ -305,7 +305,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
               Ce que disent nos utilisateurs
             </h2>
             <p className="text-sm text-gray-500 font-medium">
-              Rejoignez des milliers de candidats qui ont propulsé leur carrière avec MIKA.
+              Rejoignez des milliers de candidats qui ont propulsé leur carrière avec StaJob.
             </p>
             
             {/* Global Stats Grid */}
@@ -335,7 +335,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
                   {"★".repeat(5)}
                 </div>
                 <p className="text-xs text-gray-600 leading-relaxed font-medium mb-6">
-                  "Grâce à l'analyse ATS ultra-précise de MIKA, j'ai pu identifier les mots-clés manquants sur mon profil et décrocher mon entretien chez TechVision en 48 heures !"
+                  "Grâce à l'analyse ATS ultra-précise de StaJob, j'ai pu identifier les mots-clés manquants sur mon profil et décrocher mon entretien chez TechVision en 48 heures !"
                 </p>
               </div>
               <div className="flex items-center gap-3 border-t border-gray-100/80 pt-4">
@@ -396,7 +396,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
 
         {/* ── Footer / Copyright ── */}
         <footer className="py-6 border-t border-gray-100/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium text-gray-400">
-          <div>© {new Date().getFullYear()} MIKA Inc. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} StaJob Inc. All rights reserved.</div>
           <div className="flex gap-6">
             <a href="#" className="hover:text-[var(--color-brand-purple)] transition-all">Privacy Policy</a>
             <a href="#" className="hover:text-[var(--color-brand-purple)] transition-all">Terms of Service</a>

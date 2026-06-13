@@ -32,6 +32,20 @@ const css = `
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   @keyframes slideIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
   @keyframes spin { to{transform:rotate(360deg)} }
+  @keyframes subtle-glow {
+    0% {
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(112, 38, 232, 0.08);
+      border-color: rgba(168, 85, 247, 0.22);
+    }
+    50% {
+      box-shadow: 0 20px 70px rgba(0, 0, 0, 0.7), 0 0 50px rgba(112, 38, 232, 0.2);
+      border-color: rgba(168, 85, 247, 0.4);
+    }
+    100% {
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(112, 38, 232, 0.08);
+      border-color: rgba(168, 85, 247, 0.22);
+    }
+  }
   .slide { animation: slideIn 0.35s ease; }
   .pulse { animation: pulse 2s infinite; }
 
@@ -977,7 +991,7 @@ export default function AgentCandidature({
   const [selectedFont, setSelectedFont] = useState("Inter");
 
   const [chatMessages, setChatMessages] = useState([
-    { sender: "bot", text: "Bonjour ! Je suis MIKA, ton assistant virtuel. Pose-moi n'importe quelle question sur l'utilisation du site (ex: comment lier mon Gmail, comment optimiser mon CV) !" }
+    { sender: "bot", text: "Bonjour ! Je suis StaJob, ton assistant virtuel. Pose-moi n'importe quelle question sur l'utilisation du site (ex: comment lier mon Gmail, comment optimiser mon CV) !" }
   ]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -1040,7 +1054,13 @@ export default function AgentCandidature({
 
   // Synchronize view state from props
   useEffect(() => {
-    setActiveView(initialView === "builder" ? "builder" : "dashboard");
+    if (initialView === "templates") {
+      setActiveView("templates");
+    } else if (initialView === "builder") {
+      setActiveView("builder");
+    } else {
+      setActiveView("dashboard");
+    }
     setShowGmailPanel(initialShowGmail);
   }, [initialView, initialShowGmail]);
 
@@ -2431,15 +2451,21 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
               <circle cx="30" cy="30" r="3.5" fill="#FF4A70" />
             </svg>
             <div>
-              <div style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: 28, letterSpacing: "0.05em", color: "#FFF", lineHeight: 1.0 }}>MIKA</div>
+              <div style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: 28, letterSpacing: "0.05em", color: "#FFF", lineHeight: 1.0 }}>StaJob</div>
               <div style={{ fontSize: 8.5, color: C.accent, fontFamily: "'Orbitron', sans-serif", fontWeight: 300, letterSpacing: "3.5px", marginTop: 4 }}>
-                MY INTELLIGENT KAREER ASSISTANT
+                VOTRE AGENT DE CARRIÈRE INTELLIGENT
               </div>
             </div>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
             <button
-              onClick={() => setActiveView("builder")}
+              onClick={() => {
+                if (!user) {
+                  onNavigate && onNavigate("builder");
+                } else {
+                  setActiveView("builder");
+                }
+              }}
               style={{
                 background: activeView === "builder" ? C.accent + "20" : "transparent",
                 border: `1px solid ${activeView === "builder" ? C.accent + "66" : C.border}`,
@@ -2463,7 +2489,14 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
               🎨 Modèles & Designs
             </button>
             <button
-              onClick={() => setActiveView("dashboard")}
+              onClick={() => {
+                if (!user) {
+                  onNavigate && onNavigate("crm");
+                } else {
+                  setActiveView("dashboard");
+                  setShowGmailPanel(false);
+                }
+              }}
               style={{
                 background: activeView === "dashboard" && !showGmailPanel ? C.accent + "20" : "transparent",
                 border: `1px solid ${activeView === "dashboard" && !showGmailPanel ? C.accent + "66" : C.border}`,
@@ -2481,7 +2514,14 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
               )}
             </button>
             <button
-              onClick={() => { setShowGmailPanel(true); setActiveView("dashboard"); }}
+              onClick={() => {
+                if (!user) {
+                  onNavigate && onNavigate("gmail");
+                } else {
+                  setShowGmailPanel(true);
+                  setActiveView("dashboard");
+                }
+              }}
               style={{
                 background: showGmailPanel ? C.purple + "20" : "transparent",
                 border: `1px solid ${showGmailPanel ? C.purple + "66" : C.border}`,
@@ -2556,7 +2596,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
         </div>
 
         {/* ═══ BUILDER VIEW ═══ */}
-        {activeView === "builder" && (
+        {user && activeView === "builder" && (
           <div style={{ maxWidth: 1200, margin: "0 auto", padding: "26px 20px" }}>
             <StepBar current={step} />
 
@@ -2736,7 +2776,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                       </div>
 
                       <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, marginBottom: 16 }}>
-                        MIKA analyse ton profil en temps réel et génère une candidature sur-mesure, prête à envoyer.
+                        StaJob analyse ton profil en temps réel et génère une candidature sur-mesure, prête à envoyer.
                       </div>
 
                       {/* Chat messages */}
@@ -2763,7 +2803,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                             alignSelf: "flex-start", fontSize: 11.5, color: C.accent,
                             fontStyle: "italic", paddingLeft: 4, display: "flex", alignItems: "center", gap: 6
                           }}>
-                            <span className="pulse">●</span> MIKA est en train d'écrire...
+                            <span className="pulse">●</span> StaJob est en train d'écrire...
                           </div>
                         )}
                       </div>
@@ -2774,7 +2814,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                           value={chatInput}
                           onChange={e => setChatInput(e.target.value)}
                           onKeyDown={e => { if (e.key === "Enter") sendChatMessage(); }}
-                          placeholder="Pose une question à MIKA..."
+                          placeholder="Pose une question à StaJob..."
                           style={{
                             flex: 1, background: "rgba(10, 8, 22, 0.8)", border: `1px solid rgba(0, 240, 255, 0.25)`,
                             borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 12.5, outline: "none"
@@ -3646,6 +3686,73 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
           </div>
         )}
 
+        {/* Lock Screen for unauthorized views when not logged in */}
+        {!user && activeView !== "templates" && (
+          <div style={{
+            maxWidth: 1000,
+            width: "90%",
+            margin: "60px auto",
+            padding: "60px 40px",
+            background: "rgba(18, 14, 38, 0.85)",
+            border: "1px solid rgba(168, 85, 247, 0.22)",
+            borderRadius: "18px",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(112, 38, 232, 0.08)",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(112, 38, 232, 0.08)", // Initial shadow
+            animation: "subtle-glow 3s infinite alternate", // Apply animation
+            textAlign: "center",
+            fontFamily: "'Inter', sans-serif"
+          }} className="slide">
+            <div style={{
+              width: "70px",
+              height: "70px",
+              borderRadius: "50%",
+              background: "rgba(0, 240, 255, 0.1)",
+              border: "2px solid #00F0FF",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 24px auto"
+            }}>
+              <span style={{ fontSize: "32px" }}>🔒</span>
+            </div>
+            <h2 style={{
+              fontSize: "22px",
+              fontWeight: "800",
+              color: "#FFF",
+              marginBottom: "12px",
+              fontFamily: "'Orbitron', sans-serif",
+              letterSpacing: "0.5px"
+            }}>
+              Connexion Requise
+            </h2>
+            <p style={{
+              fontSize: "14px",
+              color: C.muted,
+              lineHeight: "1.6",
+              marginBottom: "32px"
+            }}>
+              Vous devez être connecté pour accéder à l'Optimiseur de CV & Studio, au suivi de candidatures CRM et à la synchronisation Gmail.
+            </p>
+            <button
+              onClick={() => onNavigate && onNavigate("builder")}
+              style={{
+                padding: "12px 30px",
+                background: "linear-gradient(90deg, #7026E8, #A855F7)",
+                border: "none",
+                borderRadius: "10px",
+                color: "#FFF",
+                fontWeight: "700",
+                fontSize: "14px",
+                cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(112, 38, 232, 0.4)",
+                transition: "transform 0.1s, opacity 0.2s"
+              }}
+            >
+              Se Connecter / S'inscrire
+            </button>
+          </div>
+        )}
+
         {/* ═══ TEMPLATES GALLERY VIEW ═══ */}
         {activeView === "templates" && (
           <div style={{ maxWidth: 1200, margin: "0 auto", padding: "26px 20px" }} className="slide">
@@ -3960,7 +4067,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
         )}
 
         {/* ═══ DASHBOARD / CRM VIEW ═══ */}
-        {activeView === "dashboard" && (
+        {user && activeView === "dashboard" && (
           <div style={{ maxWidth: 1400, margin: "0 auto", padding: "26px 20px" }} className="slide">
 
             {/* KPI Cards */}
@@ -4545,39 +4652,47 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
         {/* Sliding Gmail Sync Panel */}
         {showGmailPanel && (
           <div style={{
-            position: "fixed", top: 0, right: 0, width: 550, height: "100vh",
-            background: "rgba(18, 22, 40, 0.96)", backdropFilter: "blur(20px)",
-            borderLeft: `1px solid ${C.border}`, zIndex: 1100, display: "flex",
-            flexDirection: "column", boxShadow: "-10px 0 40px rgba(0,0,0,0.6)",
+            position: "fixed", top: 0, right: 0, width: "550px", height: "100vh",
+            background: "#06050C", borderLeft: `1px solid ${C.border}`,
+            zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "24px",
             animation: "slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
           }}>
-            {/* Header */}
             <div style={{
-              padding: "20px 28px", borderBottom: `1px solid ${C.border}`,
-              display: "flex", alignItems: "center", justifyContent: "space-between"
+              position: "relative", width: "100%", maxWidth: "480px", maxHeight: "90vh",
+              background: "#111a3a", borderRadius: "16px", padding: "32px",
+              boxShadow: "0 0 40px rgba(112,38,232,0.15)", border: "1px solid rgba(255,255,255,0.1)",
+              display: "flex", flexDirection: "column",
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 20 }}>📧</span>
+              {/* Close Button */}
+              <button
+                onClick={() => setShowGmailPanel(false)}
+                style={{
+                  position: "absolute", top: "16px", right: "16px",
+                  width: "32px", height: "32px", borderRadius: "50%",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", transition: "all 0.2s", zIndex: 50
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)" }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
+              >✕</button>
+
+              {/* Header */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10, marginBottom: "24px"
+              }}>
+                <span style={{ fontSize: 24 }}>📧</span>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>Importation de Candidatures</div>
-                  <div style={{ fontSize: 10, color: C.muted, fontFamily: "'DM Mono',monospace" }}>
+                  <div style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>Importation de Candidatures</div>
+                  <div style={{ fontSize: 11, color: C.muted, fontFamily: "'DM Mono',monospace" }}>
                     dossier / libellé : Suivi-Candidatures
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setShowGmailPanel(false)}
-                style={{
-                  background: "transparent", border: "none", color: C.muted,
-                  fontSize: 20, cursor: "pointer", transition: "color 0.2s"
-                }}
-                onMouseEnter={e => e.target.style.color = C.red}
-                onMouseLeave={e => e.target.style.color = C.muted}
-              >✕</button>
-            </div>
 
-            {/* Body */}
-            <div style={{ padding: 28, flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* Body */}
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20, paddingRight: "4px" }}>
 
               {/* Auth Status Banner */}
               <div style={{
@@ -4821,6 +4936,7 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
                     })}
                   </div>
                 )}
+              </div>
               </div>
             </div>
           </div>

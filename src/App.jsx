@@ -190,6 +190,7 @@ function App() {
       {/* ── Auth Modal Overlay ── */}
       {showAuthModal && (
         <AuthModal
+          theme={view === "hero" ? "dark" : "light"}
           onAuthSuccess={(authUser, authToken) => {
             handleAuthSuccess(authUser, authToken);
             setShowAuthModal(false);

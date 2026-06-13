@@ -37,7 +37,8 @@ const ai = new GoogleGenAI({
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 if (process.env.FEDAPAY_SECRET_KEY) {
   FedaPay.setApiKey(process.env.FEDAPAY_SECRET_KEY);
-  FedaPay.setEnvironment("sandbox"); // sandbox for test payments
+  const environment = process.env.FEDAPAY_SECRET_KEY.startsWith("sk_live") ? "live" : "sandbox";
+  FedaPay.setEnvironment(environment);
 }
 
 // Initialize Supabase Server client safely (uses Service Role Key if available to bypass RLS in webhooks)
@@ -139,7 +140,7 @@ app.post("/api/chatbot", checkAuth, async (req, res) => {
       });
     }
 
-    const systemInstruction = `Tu es MIKA (My Intelligent Kareer Assistant), un assistant virtuel conçu pour guider les utilisateurs dans l'utilisation de cette application.
+    const systemInstruction = `Tu es StaJob, un assistant virtuel conçu pour guider les utilisateurs dans l'utilisation de cette application.
 Ton rôle est d'expliquer comment utiliser le site et ses fonctionnalités.
 Voici des détails sur le fonctionnement de l'application :
 1. "Optimiseur & Studio" (onglet n°1) : Permet de charger un CV (.pdf, .docx, .txt), de saisir une offre d'emploi, et de configurer des informations personnelles. En cliquant sur "Lancer l'agent", l'IA analyse le profil, calcule un score ATS en temps réel, extrait les mots-clés manquants, et génère un CV optimisé et une lettre de motivation premium prête à envoyer.
@@ -371,14 +372,14 @@ app.post("/api/payment/fedapay/create-session", checkAuth, async (req, res) => {
       return res.status(400).json({ error: "amount et planId sont requis." });
     }
 
-    const fullName = req.user.user_metadata?.full_name || "Utilisateur MIKA";
+    const fullName = req.user.user_metadata?.full_name || "Utilisateur StaJob";
     const names = fullName.split(" ");
-    const firstname = names[0] || "MIKA";
+    const firstname = names[0] || "StaJob";
     const lastname = names.slice(1).join(" ") || "User";
 
     // Create FedaPay transaction
     const transaction = await Transaction.create({
-      description: `Abonnement MIKA Plan: ${planId}`,
+      description: `Abonnement StaJob Plan: ${planId}`,
       amount: amount,
       currency: { iso: "XOF" }, // West African CFA Franc
       callback_url: `http://localhost:5173/?payment=success&provider=fedapay&plan=${planId}`,

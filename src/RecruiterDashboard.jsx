@@ -236,8 +236,8 @@ export default function RecruiterDashboard({ user, token }) {
         <div style={styles.navLogo}>
           <div style={styles.logoIcon}>💼</div>
           <div>
-            <div style={styles.logoText}>MIKA</div>
-            <div style={styles.logoSub}>My Intelligent Karriere Assistant</div>
+            <div style={styles.logoText}>StaJob</div>
+            <div style={styles.logoSub}>VOTRE AGENT DE CARRIÈRE INTELLIGENT</div>
           </div>
           <span style={styles.recruiterBadge}>🏢 Recruiter</span>
         </div>
@@ -246,7 +246,7 @@ export default function RecruiterDashboard({ user, token }) {
           <div style={styles.navAvatar}>RC</div>
         </div>
       </nav>
-
+ 
       <div style={styles.layout}>
         {/* SIDEBAR */}
         <aside style={styles.sidebar}>
@@ -283,7 +283,7 @@ export default function RecruiterDashboard({ user, token }) {
             <div style={styles.sidebarFooterPlan}>Pro plan</div>
           </div>
         </aside>
-
+ 
         {/* MAIN CONTENT */}
         <main style={styles.main}>
           {activeNav === "dashboard" ? (
@@ -298,12 +298,12 @@ export default function RecruiterDashboard({ user, token }) {
                   + Post a job offer
                 </button>
               </div>
-
+ 
               {/* Success toast */}
               {published && (
                 <div style={styles.toast}>✅ Offer published successfully!</div>
               )}
-
+ 
               {/* Metrics */}
               <div style={styles.metrics}>
                 {[
@@ -319,13 +319,13 @@ export default function RecruiterDashboard({ user, token }) {
                   </div>
                 ))}
               </div>
-
+ 
               {/* Grid */}
               <div style={styles.grid2}>
                 {/* Post form */}
                 <div style={styles.card}>
                   <div style={styles.cardTitle}>➕ Post a new offer</div>
-
+ 
                   <div style={styles.formRow}>
                     <label style={styles.formLabel}>Job title</label>
                     <input
@@ -336,7 +336,7 @@ export default function RecruiterDashboard({ user, token }) {
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
                     />
                   </div>
-
+ 
                   <div style={styles.formRow2}>
                     <div>
                       <label style={styles.formLabel}>Contract type</label>
@@ -362,7 +362,7 @@ export default function RecruiterDashboard({ user, token }) {
                       />
                     </div>
                   </div>
-
+ 
                   <div style={styles.formRow}>
                     <label style={styles.formLabel}>Job description</label>
                     <textarea
@@ -372,7 +372,7 @@ export default function RecruiterDashboard({ user, token }) {
                       onChange={(e) => setForm({ ...form, description: e.target.value })}
                     />
                   </div>
-
+ 
                   <div style={styles.formRow2}>
                     <div>
                       <label style={styles.formLabel}>Salary / Stipend</label>
@@ -395,12 +395,12 @@ export default function RecruiterDashboard({ user, token }) {
                       />
                     </div>
                   </div>
-
+ 
                   <button style={styles.publishBtn} onClick={handlePublish}>
                     📤 Publish offer
                   </button>
                 </div>
-
+ 
                 {/* Candidates */}
                 <div style={styles.card}>
                   <div style={styles.cardTitle}>👥 Latest candidates</div>
@@ -438,7 +438,7 @@ export default function RecruiterDashboard({ user, token }) {
               <div style={styles.pageHeader}>
                 <div>
                   <div style={styles.pageTitle}>💼 Active Job Offers</div>
-                  <div style={styles.pageSub}>Currently open job descriptions on MIKA</div>
+                  <div style={styles.pageSub}>Currently open job descriptions on StaJob</div>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

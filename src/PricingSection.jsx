@@ -16,7 +16,7 @@ export default function PricingSection({ onBack, user, token, onOpenAuth }) {
         "ATS Optimizer standard",
         "Modèles de CV de base",
         "Limité à 3 candidatures actives",
-        "Accès standard à l'IA MIKA",
+        "Accès standard à l'IA StaJob",
       ],
       cta: "Free Plan",
       popular: false,

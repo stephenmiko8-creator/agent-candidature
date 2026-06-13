@@ -30,11 +30,11 @@ export default function AboutPage({ onBack }) {
           </svg>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: 24, letterSpacing: "0.05em", color: "#FFF", lineHeight: 1.0 }}>MIKA</span>
+              <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: 24, letterSpacing: "0.05em", color: "#FFF", lineHeight: 1.0 }}>StaJob</span>
               <span style={styles.aboutBadge}>ABOUT</span>
             </div>
             <div style={{ fontSize: 8, color: "#7026E8", fontFamily: "'Orbitron', sans-serif", fontWeight: 300, letterSpacing: "2.5px", marginTop: 4 }}>
-              MY INTELLIGENT KAREER ASSISTANT
+              VOTRE AGENT DE CARRIÈRE INTELLIGENT
             </div>
           </div>
         </div>
@@ -42,21 +42,21 @@ export default function AboutPage({ onBack }) {
           ↩ Retour Accueil
         </button>
       </header>
-
+ 
       <main style={styles.main}>
         {/* Hero Section */}
         <section style={styles.hero}>
-          <h1 style={styles.title}>À propos de MIKA</h1>
+          <h1 style={styles.title}>À propos de StaJob</h1>
           <p style={styles.subtitle}>
-            My Intelligent Karriere Assistant — Révolutionner la recherche d'emploi et la candidature grâce à l'intelligence artificielle.
+            Révolutionner la recherche d'emploi et la candidature grâce à l'intelligence artificielle.
           </p>
         </section>
-
+ 
         {/* Mission Card */}
         <div style={styles.missionCard}>
           <h2 style={styles.sectionTitle}>Notre Mission</h2>
           <p style={styles.missionText}>
-            MIKA a été conçu pour redonner le contrôle aux candidats. Dans un marché du travail de plus en plus compétitif et robotisé, nous développons des outils intelligents qui permettent aux candidats d'optimiser leurs documents professionnels, de suivre leur pipeline de candidatures, de décrypter les exigences des recruteurs et de maximiser leur score ATS.
+            StaJob a été conçu pour redonner le contrôle aux candidats. Dans un marché du travail de plus en plus compétitif et robotisé, nous développons des outils intelligents qui permettent aux candidats d'optimiser leurs documents professionnels, de suivre leur pipeline de candidatures, de décrypter les exigences des recruteurs et de maximiser leur score ATS.
           </p>
         </div>
 
