@@ -4694,249 +4694,249 @@ Génère le JSON avec la nouvelle lettre et l'objet de candidature associés.`;
               {/* Body */}
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20, paddingRight: "4px" }}>
 
-              {/* Auth Status Banner */}
-              <div style={{
-                background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
-                padding: 16, display: "flex", flexDirection: "column", gap: 12
-              }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: gmailAuthenticated ? C.green : C.red,
-                      boxShadow: `0 0 8px ${gmailAuthenticated ? C.green : C.red}`
-                    }} />
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>
-                      {gmailAuthenticated ? `Compte connecté : ${gmailEmail}` : "Messagerie non connectée"}
-                    </span>
-                  </div>
-                  {gmailAuthenticated && (
-                    <button
-                      onClick={disconnectGmail}
-                      style={{
-                        background: "transparent", border: "none", color: C.red,
-                        fontSize: 11, cursor: "pointer", textDecoration: "underline"
-                      }}
-                    >Déconnecter</button>
-                  )}
-                </div>
-
-                {gmailAuthenticated ? (
-                  /* Sync button for authenticated users */
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <Btn
-                      onClick={syncGmail}
-                      color={C.purple}
-                      disabled={gmailSyncing}
-                      style={{ flex: 1 }}
-                    >
-                      {gmailSyncing ? "🔄 Synchronisation..." : "🔄 Synchroniser maintenant"}
-                    </Btn>
-                  </div>
-                ) : (
-                  /* Connection form for unauthenticated users */
-                  <form onSubmit={saveGmailConfig} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-                    <p style={{ fontSize: 11, color: C.muted, margin: "0 0 4px 0", lineHeight: 1.4 }}>
-                      Pour importer automatiquement vos e-mails de candidature, configurez votre connexion Gmail sécurisée ci-dessous.
-                    </p>
-                    <div>
-                      <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Adresse Gmail</label>
-                      <input
-                        type="email"
-                        value={configEmail}
-                        onChange={(e) => setConfigEmail(e.target.value)}
-                        placeholder="votre.email@gmail.com"
-                        style={{
-                          width: "100%", background: "#0C0F1A", border: `1px solid ${C.border}`,
-                          borderRadius: 6, padding: "6px 10px", color: C.text, fontSize: 12,
-                          outline: "none"
-                        }}
-                      />
+                {/* Auth Status Banner */}
+                <div style={{
+                  background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
+                  padding: 16, display: "flex", flexDirection: "column", gap: 12
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{
+                        width: 8, height: 8, borderRadius: "50%",
+                        background: gmailAuthenticated ? C.green : C.red,
+                        boxShadow: `0 0 8px ${gmailAuthenticated ? C.green : C.red}`
+                      }} />
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>
+                        {gmailAuthenticated ? `Compte connecté : ${gmailEmail}` : "Messagerie non connectée"}
+                      </span>
                     </div>
-
-                    <div>
-                      <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Mot de passe d'application</label>
-                      <input
-                        type="password"
-                        value={configAppPassword}
-                        onChange={(e) => setConfigAppPassword(e.target.value)}
-                        placeholder="Mot de passe à 16 caractères"
+                    {gmailAuthenticated && (
+                      <button
+                        onClick={disconnectGmail}
                         style={{
-                          width: "100%", background: "#0C0F1A", border: `1px solid ${C.border}`,
-                          borderRadius: 6, padding: "6px 10px", color: C.text, fontSize: 12,
-                          outline: "none"
+                          background: "transparent", border: "none", color: C.red,
+                          fontSize: 11, cursor: "pointer", textDecoration: "underline"
                         }}
-                      />
-                    </div>
-
-                    {configError && <div style={{ fontSize: 11, color: C.red }}>{configError}</div>}
-                    {configMessage && <div style={{ fontSize: 11, color: C.green }}>{configMessage}</div>}
-
-                    <button
-                      type="submit"
-                      style={{
-                        background: C.accent, border: "none", color: "#000",
-                        fontWeight: 600, borderRadius: 6, padding: "8px 12px",
-                        cursor: "pointer", fontSize: 11, marginTop: 4, width: "100%"
-                      }}
-                    >
-                      🔌 Connexion Messagerie
-                    </button>
-                  </form>
-                )}
-
-                {/* Helper guide always visible or togglable when not connected */}
-                {!gmailAuthenticated && (
-                  <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, marginTop: 4 }}>
-                    <button
-                      type="button"
-                      onClick={() => setShowGmailConfig(!showGmailConfig)}
-                      style={{
-                        background: "transparent", border: "none", color: C.accent,
-                        fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center",
-                        gap: 4, padding: 0, fontWeight: 500
-                      }}
-                    >
-                      {showGmailConfig ? "▼ Masquer l'aide" : "▶ Besoin d'aide pour le mot de passe d'application ?"}
-                    </button>
-
-                    {showGmailConfig && (
-                      <div style={{ marginTop: 8, fontSize: 10, color: C.muted, lineHeight: 1.4, background: "#0C0F1A", padding: 10, borderRadius: 6, border: `1px dashed ${C.border}` }}>
-                        1. Activez la <strong>Validation en 2 étapes</strong> dans la sécurité de votre compte Google.<br />
-                        2. Ouvrez <a href="https://myaccount.google.com/security" target="_blank" rel="noopener noreferrer" style={{ color: C.accent, textDecoration: "underline" }}>Mon Compte Google &gt; Sécurité</a>.<br />
-                        3. Recherchez <strong>Mots de passe d'application</strong>.<br />
-                        4. Générez un code (ex: "CRM Candidatures") et copiez les 16 lettres.<br />
-                        5. Saisissez-les dans le champ ci-dessus.
-                      </div>
+                      >Déconnecter</button>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Message & Errors */}
-              {gmailError && (
-                <div style={{
-                  background: C.red + "15", border: `1px solid ${C.red}44`,
-                  borderRadius: 8, padding: "10px 14px", color: C.red, fontSize: 12
-                }}>
-                  ⚠️ {gmailError}
-                </div>
-              )}
-              {gmailMessage && !gmailError && (
-                <div style={{
-                  background: C.accent + "15", border: `1px solid ${C.accent}44`,
-                  borderRadius: 8, padding: "10px 14px", color: C.accent, fontSize: 11,
-                  fontFamily: "'DM Mono',monospace"
-                }}>
-                  ℹ️ {gmailMessage}
-                </div>
-              )}
+                  {gmailAuthenticated ? (
+                    /* Sync button for authenticated users */
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <Btn
+                        onClick={syncGmail}
+                        color={C.purple}
+                        disabled={gmailSyncing}
+                        style={{ flex: 1 }}
+                      >
+                        {gmailSyncing ? "🔄 Synchronisation..." : "🔄 Synchroniser maintenant"}
+                      </Btn>
+                    </div>
+                  ) : (
+                    /* Connection form for unauthenticated users */
+                    <form onSubmit={saveGmailConfig} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
+                      <p style={{ fontSize: 11, color: C.muted, margin: "0 0 4px 0", lineHeight: 1.4 }}>
+                        Pour importer automatiquement vos e-mails de candidature, configurez votre connexion Gmail sécurisée ci-dessous.
+                      </p>
+                      <div>
+                        <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Adresse Gmail</label>
+                        <input
+                          type="email"
+                          value={configEmail}
+                          onChange={(e) => setConfigEmail(e.target.value)}
+                          placeholder="votre.email@gmail.com"
+                          style={{
+                            width: "100%", background: "#0C0F1A", border: `1px solid ${C.border}`,
+                            borderRadius: 6, padding: "6px 10px", color: C.text, fontSize: 12,
+                            outline: "none"
+                          }}
+                        />
+                      </div>
 
-              {/* Sync results */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700 }}>
-                    📩 Candidatures détectées ({gmailEmails.length})
-                  </span>
-                  {gmailEmails.length > 0 && (
-                    <button
-                      onClick={importAllGmailCandidatures}
-                      style={{
-                        background: C.green + "20", border: `1px solid ${C.green}44`,
-                        color: C.green, fontSize: 11, padding: "4px 10px",
-                        borderRadius: 6, cursor: "pointer", fontWeight: 600
-                      }}
-                    >🚀 Tout importer</button>
+                      <div>
+                        <label style={{ fontSize: 11, color: C.muted, display: "block", marginBottom: 4 }}>Mot de passe d'application</label>
+                        <input
+                          type="password"
+                          value={configAppPassword}
+                          onChange={(e) => setConfigAppPassword(e.target.value)}
+                          placeholder="Mot de passe à 16 caractères"
+                          style={{
+                            width: "100%", background: "#0C0F1A", border: `1px solid ${C.border}`,
+                            borderRadius: 6, padding: "6px 10px", color: C.text, fontSize: 12,
+                            outline: "none"
+                          }}
+                        />
+                      </div>
+
+                      {configError && <div style={{ fontSize: 11, color: C.red }}>{configError}</div>}
+                      {configMessage && <div style={{ fontSize: 11, color: C.green }}>{configMessage}</div>}
+
+                      <button
+                        type="submit"
+                        style={{
+                          background: C.accent, border: "none", color: "#000",
+                          fontWeight: 600, borderRadius: 6, padding: "8px 12px",
+                          cursor: "pointer", fontSize: 11, marginTop: 4, width: "100%"
+                        }}
+                      >
+                        🔌 Connexion Messagerie
+                      </button>
+                    </form>
+                  )}
+
+                  {/* Helper guide always visible or togglable when not connected */}
+                  {!gmailAuthenticated && (
+                    <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12, marginTop: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowGmailConfig(!showGmailConfig)}
+                        style={{
+                          background: "transparent", border: "none", color: C.accent,
+                          fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center",
+                          gap: 4, padding: 0, fontWeight: 500
+                        }}
+                      >
+                        {showGmailConfig ? "▼ Masquer l'aide" : "▶ Besoin d'aide pour le mot de passe d'application ?"}
+                      </button>
+
+                      {showGmailConfig && (
+                        <div style={{ marginTop: 8, fontSize: 10, color: C.muted, lineHeight: 1.4, background: "#0C0F1A", padding: 10, borderRadius: 6, border: `1px dashed ${C.border}` }}>
+                          1. Activez la <strong>Validation en 2 étapes</strong> dans la sécurité de votre compte Google.<br />
+                          2. Ouvrez <a href="https://myaccount.google.com/security" target="_blank" rel="noopener noreferrer" style={{ color: C.accent, textDecoration: "underline" }}>Mon Compte Google &gt; Sécurité</a>.<br />
+                          3. Recherchez <strong>Mots de passe d'application</strong>.<br />
+                          4. Générez un code (ex: "CRM Candidatures") et copiez les 16 lettres.<br />
+                          5. Saisissez-les dans le champ ci-dessus.
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
-                {gmailEmails.length === 0 ? (
+                {/* Message & Errors */}
+                {gmailError && (
                   <div style={{
-                    textAlign: "center", padding: "40px 20px", color: C.dim,
-                    border: `1px dashed ${C.border}`, borderRadius: 12, fontSize: 12
+                    background: C.red + "15", border: `1px solid ${C.red}44`,
+                    borderRadius: 8, padding: "10px 14px", color: C.red, fontSize: 12
                   }}>
-                    {gmailSyncing ? "Analyse IA des emails du libellé..." : "Aucune candidature en attente d'import. Cliquez sur Synchroniser pour interroger Gmail."}
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {gmailEmails.map(email => {
-                      const statCol = STATUT_COLORS[email.statut_suggere] || C.accent;
-                      return (
-                        <div key={email.emailId} style={{
-                          background: C.card, border: `1px solid ${C.border}`,
-                          borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 10,
-                          position: "relative"
-                        }}>
-                          {/* Top row */}
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>
-                                {email.entreprise || "Entreprise inconnue"}
-                              </div>
-                              <div style={{ fontSize: 12.5, fontWeight: 500, color: C.muted }}>
-                                {email.poste || "Poste non spécifié"}
-                              </div>
-                            </div>
-                            <span style={{
-                              background: statCol + "20", color: statCol,
-                              fontSize: 10, padding: "2px 8px", borderRadius: 10,
-                              fontWeight: 700, textTransform: "uppercase"
-                            }}>{email.statut_suggere}</span>
-                          </div>
-
-                          {/* Details */}
-                          <div style={{ display: "flex", gap: 14, fontSize: 11, color: C.muted, flexWrap: "wrap" }}>
-                            {email.type_contrat && <span>📄 {email.type_contrat}</span>}
-                            {email.lieu && <span>📍 {email.lieu}</span>}
-                            <span>📅 {new Date(email.emailDate || email.date_email || Date.now()).toLocaleDateString("fr-FR")}</span>
-                          </div>
-
-                          {/* Summary / Snippet */}
-                          <div style={{
-                            background: C.bg, padding: "10px 12px", borderRadius: 8,
-                            fontSize: 11.5, color: C.muted, border: `1px solid ${C.border}`,
-                            lineHeight: 1.4
-                          }}>
-                            <strong>Résumé IA:</strong> {email.resume}
-                          </div>
-
-                          {/* Action required */}
-                          {email.action_requise && (
-                            <div style={{
-                              background: C.gold + "15", border: `1px solid ${C.gold}44`,
-                              borderRadius: 8, padding: "8px 12px", color: C.gold, fontSize: 11,
-                              display: "flex", flexDirection: "column", gap: 2
-                            }}>
-                              <strong>⚠️ Action requise:</strong> {email.action_requise}
-                              {email.date_action && (
-                                <span style={{ fontSize: 9.5, opacity: 0.8 }}>
-                                  📅 Échéance suggérée : {new Date(email.date_action).toLocaleDateString("fr-FR")}
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Import Actions */}
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                            <span style={{ fontSize: 9.5, color: C.dim, fontFamily: "'DM Mono',monospace" }}>
-                              De: {email.emailFrom?.split('<')[0]}
-                            </span>
-                            <button
-                              onClick={() => importGmailCandidature(email)}
-                              style={{
-                                background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
-                                color: "#fff", border: "none", borderRadius: 6,
-                                padding: "6px 12px", fontSize: 11.5, fontWeight: 600,
-                                cursor: "pointer", boxShadow: `0 4px 12px ${C.accent}30`
-                              }}
-                            >✅ Importer dans le CRM</button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    ⚠️ {gmailError}
                   </div>
                 )}
-              </div>
+                {gmailMessage && !gmailError && (
+                  <div style={{
+                    background: C.accent + "15", border: `1px solid ${C.accent}44`,
+                    borderRadius: 8, padding: "10px 14px", color: C.accent, fontSize: 11,
+                    fontFamily: "'DM Mono',monospace"
+                  }}>
+                    ℹ️ {gmailMessage}
+                  </div>
+                )}
+
+                {/* Sync results */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>
+                      📩 Candidatures détectées ({gmailEmails.length})
+                    </span>
+                    {gmailEmails.length > 0 && (
+                      <button
+                        onClick={importAllGmailCandidatures}
+                        style={{
+                          background: C.green + "20", border: `1px solid ${C.green}44`,
+                          color: C.green, fontSize: 11, padding: "4px 10px",
+                          borderRadius: 6, cursor: "pointer", fontWeight: 600
+                        }}
+                      >🚀 Tout importer</button>
+                    )}
+                  </div>
+
+                  {gmailEmails.length === 0 ? (
+                    <div style={{
+                      textAlign: "center", padding: "40px 20px", color: C.dim,
+                      border: `1px dashed ${C.border}`, borderRadius: 12, fontSize: 12
+                    }}>
+                      {gmailSyncing ? "Analyse IA des emails du libellé..." : "Aucune candidature en attente d'import. Cliquez sur Synchroniser pour interroger Gmail."}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {gmailEmails.map(email => {
+                        const statCol = STATUT_COLORS[email.statut_suggere] || C.accent;
+                        return (
+                          <div key={email.emailId} style={{
+                            background: C.card, border: `1px solid ${C.border}`,
+                            borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 10,
+                            position: "relative"
+                          }}>
+                            {/* Top row */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>
+                                  {email.entreprise || "Entreprise inconnue"}
+                                </div>
+                                <div style={{ fontSize: 12.5, fontWeight: 500, color: C.muted }}>
+                                  {email.poste || "Poste non spécifié"}
+                                </div>
+                              </div>
+                              <span style={{
+                                background: statCol + "20", color: statCol,
+                                fontSize: 10, padding: "2px 8px", borderRadius: 10,
+                                fontWeight: 700, textTransform: "uppercase"
+                              }}>{email.statut_suggere}</span>
+                            </div>
+
+                            {/* Details */}
+                            <div style={{ display: "flex", gap: 14, fontSize: 11, color: C.muted, flexWrap: "wrap" }}>
+                              {email.type_contrat && <span>📄 {email.type_contrat}</span>}
+                              {email.lieu && <span>📍 {email.lieu}</span>}
+                              <span>📅 {new Date(email.emailDate || email.date_email || Date.now()).toLocaleDateString("fr-FR")}</span>
+                            </div>
+
+                            {/* Summary / Snippet */}
+                            <div style={{
+                              background: C.bg, padding: "10px 12px", borderRadius: 8,
+                              fontSize: 11.5, color: C.muted, border: `1px solid ${C.border}`,
+                              lineHeight: 1.4
+                            }}>
+                              <strong>Résumé IA:</strong> {email.resume}
+                            </div>
+
+                            {/* Action required */}
+                            {email.action_requise && (
+                              <div style={{
+                                background: C.gold + "15", border: `1px solid ${C.gold}44`,
+                                borderRadius: 8, padding: "8px 12px", color: C.gold, fontSize: 11,
+                                display: "flex", flexDirection: "column", gap: 2
+                              }}>
+                                <strong>⚠️ Action requise:</strong> {email.action_requise}
+                                {email.date_action && (
+                                  <span style={{ fontSize: 9.5, opacity: 0.8 }}>
+                                    📅 Échéance suggérée : {new Date(email.date_action).toLocaleDateString("fr-FR")}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Import Actions */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                              <span style={{ fontSize: 9.5, color: C.dim, fontFamily: "'DM Mono',monospace" }}>
+                                De: {email.emailFrom?.split('<')[0]}
+                              </span>
+                              <button
+                                onClick={() => importGmailCandidature(email)}
+                                style={{
+                                  background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
+                                  color: "#fff", border: "none", borderRadius: 6,
+                                  padding: "6px 12px", fontSize: 11.5, fontWeight: 600,
+                                  cursor: "pointer", boxShadow: `0 4px 12px ${C.accent}30`
+                                }}
+                              >✅ Importer dans le CRM</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

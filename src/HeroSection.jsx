@@ -1,16 +1,29 @@
 import React, { useState } from "react";
 
-export default function HeroSection({ onNavigate, onSearch, currentView = "hero", isAdmin }) {
+export default function HeroSection({ onNavigate, onSearch, currentView = "hero", isAdmin, stats = { count: 3, avgAts: 85 } }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   const navItems = [
-    { name: "Accueil", view: "hero", hasDropdown: false },
-    { name: "Optimiseur & Studio", view: "builder", hasDropdown: false },
-    { name: "Modèles & Designs", view: "templates", hasDropdown: false },
+    {
+      name: "Candidats",
+      hasDropdown: true,
+      subItems: [
+        { name: "Offres d'emploi", view: "job_board" },
+        { name: "Optimiseur & Studio", view: "builder" },
+        { name: "Modèles & Designs", view: "templates" },
+      ]
+    },
+    { name: "Recruteurs", view: "recruiter", hasDropdown: false },
+    {
+      name: "Général",
+      hasDropdown: true,
+      subItems: [
+        { name: "Blog", view: "blog" },
+        { name: "À propos", view: "about" },
+      ]
+    },
     { name: "Tarifs", view: "pricing", hasDropdown: false },
-    { name: "Blog", view: "blog", hasDropdown: false },
-    { name: "About", view: "about", hasDropdown: false },
-    { name: "Espace Recruteur", view: "recruiter", hasDropdown: false },
   ];
   if (isAdmin) {
     navItems.push({ name: "Admin Panel ⚙️", view: "admin", hasDropdown: false });
@@ -61,21 +74,57 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 lg:gap-10">
             {navItems.map((item) => {
-              const isActive = currentView === item.view;
+              const isItemActive = item.view === currentView || (item.subItems && item.subItems.some(sub => sub.view === currentView));
               return (
-                <button
+                <div 
                   key={item.name}
-                  onClick={() => onNavigate && onNavigate(item.view)}
-                  className={`relative font-semibold text-[15px] transition-all hover:text-[var(--color-brand-purple)] flex items-center gap-0.5 cursor-pointer ${
-                    isActive ? "text-[var(--color-brand-dark)]" : "text-gray-500/90"
-                  }`}
+                  className="relative group"
+                  onMouseEnter={() => item.hasDropdown && setActiveDropdown(item.name)}
+                  onMouseLeave={() => item.hasDropdown && setActiveDropdown(null)}
                 >
-                  {item.name}
-                  {item.hasDropdown && <span className="text-[11px] font-bold text-inherit opacity-60 ml-0.5">+</span>}
-                  {isActive && (
-                    <span className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[var(--color-brand-teal)] shadow-[0_0_6px_var(--color-brand-teal)]"></span>
+                  <button
+                    onClick={() => {
+                      if (!item.hasDropdown && onNavigate) onNavigate(item.view);
+                    }}
+                    className={`relative font-semibold text-[15px] transition-all hover:text-[var(--color-brand-purple)] flex items-center gap-1 cursor-pointer ${
+                      isItemActive ? "text-[var(--color-brand-dark)]" : "text-gray-500/90"
+                    }`}
+                  >
+                    {item.name}
+                    {item.hasDropdown && (
+                      <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === item.name ? "rotate-180 text-[var(--color-brand-purple)]" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                    {isItemActive && (
+                      <span className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[var(--color-brand-teal)] shadow-[0_0_6px_var(--color-brand-teal)]"></span>
+                    )}
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {item.hasDropdown && (
+                    <div className={`absolute top-full left-1/2 -translate-x-1/2 pt-4 transition-all duration-200 min-w-[200px] ${activeDropdown === item.name ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2"}`}>
+                      <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-2 flex flex-col">
+                        {item.subItems.map((sub) => (
+                          <button
+                            key={sub.name}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              if (onNavigate) onNavigate(sub.view);
+                            }}
+                            className={`text-left px-4 py-2.5 rounded-lg text-sm font-bold transition-colors ${
+                              currentView === sub.view 
+                                ? "bg-[var(--color-brand-teal)]/10 text-[var(--color-brand-teal)]" 
+                                : "text-gray-600 hover:bg-gray-50 hover:text-[var(--color-brand-purple)]"
+                            }`}
+                          >
+                            {sub.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </nav>
@@ -179,28 +228,51 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
           </div>
 
           {/* Quick Navigation links inside drawer */}
-          <div className="flex flex-col gap-3">
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Navigation</span>
-            {navItems.map((item) => {
-              const isActive = currentView === item.view;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onNavigate && onNavigate(item.view);
-                  }}
-                  className={`w-full py-3 px-4 rounded-xl font-bold text-sm text-left transition-all flex items-center justify-between ${
-                    isActive 
-                      ? "bg-gradient-to-r from-[#00b4d8] to-[#0077B6] text-white shadow-[0_4px_12px_rgba(0,180,216,0.25)]" 
-                      : "text-white/80 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <span>{item.name}</span>
-                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </button>
-              );
-            })}
+          <div className="flex flex-col gap-4">
+            {navItems.map((item) => (
+              <div key={item.name} className="flex flex-col gap-1.5">
+                {item.hasDropdown ? (
+                  <>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-1 mt-1">{item.name}</span>
+                    {item.subItems.map(sub => {
+                      const isActive = currentView === sub.view;
+                      return (
+                        <button
+                          key={sub.name}
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            onNavigate && onNavigate(sub.view);
+                          }}
+                          className={`w-full py-2.5 px-4 rounded-xl font-bold text-sm text-left transition-all flex items-center justify-between ${
+                            isActive 
+                              ? "bg-gradient-to-r from-[#00b4d8] to-[#0077B6] text-white shadow-[0_4px_12px_rgba(0,180,216,0.25)]" 
+                              : "text-white/80 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          <span>{sub.name}</span>
+                          {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </button>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onNavigate && onNavigate(item.view);
+                    }}
+                    className={`w-full py-2.5 px-4 mt-2 rounded-xl font-bold text-sm text-left transition-all flex items-center justify-between ${
+                      currentView === item.view 
+                        ? "bg-gradient-to-r from-[#00b4d8] to-[#0077B6] text-white shadow-[0_4px_12px_rgba(0,180,216,0.25)]" 
+                        : "text-white/80 bg-white/5 hover:bg-white/10 hover:text-white border border-white/10"
+                    }`}
+                  >
+                    <span>{item.name}</span>
+                    {currentView === item.view && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
 
           {/* CRM Quick Stats inside drawer */}
@@ -208,11 +280,11 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
             <span className="text-[10px] text-[var(--color-brand-teal)] font-bold uppercase tracking-wider">Mon CRM - Aperçu</span>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col">
-                <span className="text-2xl font-bold text-white">3</span>
+                <span className="text-2xl font-bold text-white">{stats.count}</span>
                 <span className="text-[11px] text-gray-400 font-medium">Candidatures</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-2xl font-bold text-[var(--color-brand-teal)]">85%</span>
+                <span className="text-2xl font-bold text-[var(--color-brand-teal)]">{stats.avgAts}%</span>
                 <span className="text-[11px] text-gray-400 font-medium">Score ATS moyen</span>
               </div>
             </div>
@@ -244,12 +316,12 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
           {/* Left Column: Typography & CTAs */}
           <div className="flex flex-col gap-6 lg:gap-8 text-left max-w-xl">
             <h1 className="text-[42px] md:text-[54px] lg:text-[62px] font-extrabold text-[var(--color-brand-dark)] leading-[1.08] tracking-tight">
-              Apply smarter. <br />
-              <span className="bg-gradient-to-r from-[#00b4d8] to-[#0077B6] bg-clip-text text-transparent">Get hired faster.</span>
+              Postulez plus intelligemment. <br />
+              <span className="bg-gradient-to-r from-[#00b4d8] to-[#0077B6] bg-clip-text text-transparent">Soyez embauché plus vite.</span>
             </h1>
             
             <p className="text-[16px] md:text-[17px] text-[var(--color-brand-gray)] leading-relaxed font-medium max-w-lg">
-              StaJob helps you optimize CVs, analyze job offers, and land your dream job with AI power.
+              StaJob vous aide à optimiser vos CV, décrypter les offres et décrocher le job de vos rêves grâce à la puissance de l'IA.
             </p>
 
             {/* CTAs */}
@@ -259,11 +331,14 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
                 onClick={() => onNavigate && onNavigate("builder")}
                 className="px-8 py-4 bg-gradient-to-r from-[#00b4d8] to-[#0077B6] hover:from-[#0077B6] hover:to-[#005682] text-white font-bold text-sm rounded-full shadow-[0_6px_20px_rgba(0,180,216,0.25)] hover:shadow-none transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer"
               >
-                Get Started
+                Commencer
               </button>
 
               {/* Play Button CTA */}
-              <button className="flex items-center gap-3.5 pl-3 pr-6 py-3 border border-gray-200/80 hover:border-[var(--color-brand-purple)] rounded-full bg-white/70 hover:bg-white transition-all duration-300 cursor-pointer group">
+              <button 
+                onClick={() => alert("La vidéo de présentation sera disponible prochainement !")}
+                className="flex items-center gap-3.5 pl-3 pr-6 py-3 border border-gray-200/80 hover:border-[var(--color-brand-purple)] rounded-full bg-white/70 hover:bg-white transition-all duration-300 cursor-pointer group"
+              >
                 <span className="w-10 h-10 rounded-full bg-[var(--color-brand-purple-light)] group-hover:bg-[var(--color-brand-purple)] flex items-center justify-center transition-all duration-300">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -275,7 +350,7 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
                   </svg>
                 </span>
                 <span className="text-sm font-bold text-[var(--color-brand-dark)]">
-                  Play Intro
+                  Voir la démo
                 </span>
               </button>
             </div>
@@ -396,10 +471,10 @@ export default function HeroSection({ onNavigate, onSearch, currentView = "hero"
 
         {/* ── Footer / Copyright ── */}
         <footer className="py-6 border-t border-gray-100/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium text-gray-400">
-          <div>© {new Date().getFullYear()} StaJob Inc. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} StaJob. Tous droits réservés.</div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-[var(--color-brand-purple)] transition-all">Privacy Policy</a>
-            <a href="#" className="hover:text-[var(--color-brand-purple)] transition-all">Terms of Service</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); alert("En cours de rédaction"); }} className="hover:text-[var(--color-brand-purple)] transition-all">Politique de confidentialité</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); alert("En cours de rédaction"); }} className="hover:text-[var(--color-brand-purple)] transition-all">Conditions générales</a>
           </div>
         </footer>
 

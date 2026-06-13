@@ -188,6 +188,15 @@ function App() {
     }
   };
 
+  // Compute CRM stats for HeroSection
+  const candidaturesList = getCandidatures();
+  const candidaturesCount = candidaturesList.length;
+  const candidaturesWithScore = candidaturesList.filter((c) => typeof c.atsScore === "number");
+  const avgAts = candidaturesWithScore.length > 0 
+    ? Math.round(candidaturesWithScore.reduce((sum, c) => sum + c.atsScore, 0) / candidaturesWithScore.length)
+    : 85;
+  const crmStats = { count: candidaturesCount, avgAts };
+
   if (IS_MAINTENANCE) {
     return (
       <div style={{
@@ -273,7 +282,19 @@ function App() {
           onSearch={() => setShowSearch(true)} 
           currentView={view} 
           isAdmin={isAdmin}
+          stats={crmStats}
         />
+      ) : view === "job_board" ? (
+        <div style={{ padding: "80px 20px", textAlign: "center", color: "#FFF", fontFamily: "'Inter', sans-serif", minHeight: "100vh", background: "#06050C" }}>
+          <h2 style={{ marginBottom: "16px", fontSize: "32px", fontWeight: "bold" }}>🌍 Offres d'emploi (Job Board)</h2>
+          <p style={{ color: "#94A3B8", marginBottom: "32px" }}>Découvrez les offres exclusives publiées par nos recruteurs partenaires. Bientôt disponible !</p>
+          <button 
+            onClick={() => setView("hero")} 
+            style={{ padding: "12px 24px", background: "linear-gradient(135deg, #00F0FF, #7026E8)", border: "none", borderRadius: "8px", color: "#FFF", fontWeight: "bold", cursor: "pointer" }}
+          >
+            Retour Accueil
+          </button>
+        </div>
       ) : view === "pricing" ? (
         <PricingSection
           onBack={() => setView("hero")}

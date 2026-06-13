@@ -52,6 +52,25 @@ export default function AboutPage({ onBack }) {
           </p>
         </section>
  
+        {/* Story / Journey Section */}
+        <div style={styles.storySection}>
+          <div style={styles.storyIconWrapper}>
+            <span style={styles.storyIcon}>🔥</span>
+          </div>
+          <h2 style={{...styles.sectionTitle, color: "#FF4A70"}}>Mon Histoire & Ma Résilience</h2>
+          <div style={styles.storyContent}>
+            <p style={styles.storyText}>
+              Le chemin pour décrocher un emploi n'a pas été de tout repos. J'ai traversé le désert des candidatures sans réponse, envoyé des centaines de CV qui semblaient disparaître dans un trou noir, et passé des heures à rédiger des lettres de motivation pour n'obtenir que des refus automatisés ou un silence glacial. C'était épuisant, frustrant, et profondément décourageant. La sensation de ne pas être vu à sa juste valeur est la pire qui soit.
+            </p>
+            <p style={styles.storyText}>
+              Mais au lieu de baisser les bras, j'ai fait preuve de résilience. J'ai refusé de laisser un système automatisé définir ma valeur. J'ai décidé de comprendre <em>pourquoi</em> le système fonctionnait ainsi. J'ai étudié les algorithmes de tri des recruteurs (ATS), décodé ce qu'ils cherchaient vraiment, et commencé à bâtir des solutions pour contourner ces barrières. Chaque échec, chaque porte fermée m'a appris une leçon de plus sur la réalité brutale du monde du recrutement.
+            </p>
+            <p style={styles.storyText}>
+              <strong>StaJob</strong> est le fruit direct de ce parcours du combattant. J'ai créé cette plateforme en y mettant toute ma rage de vaincre, pour que vous n'ayez plus jamais à vous sentir seul ou désarmé face au marché de l'emploi. C'est la revanche du candidat : votre arme secrète, forgée dans la difficulté et conçue pour vous mener à la victoire.
+            </p>
+          </div>
+        </div>
+
         {/* Mission Card */}
         <div style={styles.missionCard}>
           <h2 style={styles.sectionTitle}>Notre Mission</h2>
@@ -215,6 +234,49 @@ const styles = {
     maxWidth: 650,
     margin: "0 auto",
     lineHeight: 1.6,
+  },
+  storySection: {
+    background: "linear-gradient(145deg, rgba(18, 14, 38, 0.8), rgba(13, 11, 28, 0.9))",
+    borderLeft: "4px solid #FF4A70",
+    borderTop: "1px solid rgba(255, 74, 112, 0.15)",
+    borderRight: "1px solid rgba(255, 74, 112, 0.15)",
+    borderBottom: "1px solid rgba(255, 74, 112, 0.15)",
+    borderRadius: 16,
+    padding: "32px 40px",
+    marginBottom: 40,
+    position: "relative",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(255, 74, 112, 0.05)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+  },
+  storyIconWrapper: {
+    position: "absolute",
+    top: -20,
+    left: 30,
+    width: 40,
+    height: 40,
+    background: "#06050C",
+    border: "1px solid rgba(255, 74, 112, 0.5)",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 0 15px rgba(255, 74, 112, 0.3)",
+  },
+  storyIcon: {
+    fontSize: 20,
+  },
+  storyContent: {
+    marginTop: 10,
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  },
+  storyText: {
+    fontSize: 15,
+    color: "#E2E8F0",
+    lineHeight: 1.8,
+    letterSpacing: "0.2px",
   },
   missionCard: {
     background: "rgba(18, 14, 38, 0.8)",
