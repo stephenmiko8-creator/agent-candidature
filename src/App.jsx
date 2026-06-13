@@ -9,6 +9,9 @@ import { supabase } from "./supabaseClient";
 import AuthModal from "./AuthModal";
 import PricingSection from "./PricingSection";
 
+const IS_MAINTENANCE = true; // ⚠️ METTRE A FALSE POUR REACTIVER LE SITE
+
+
 function App() {
   const [view, setView] = useState("hero"); // "hero", "builder", "crm", "gmail"
   const [showSearch, setShowSearch] = useState(false);
@@ -184,6 +187,63 @@ function App() {
       setView(target);
     }
   };
+
+  if (IS_MAINTENANCE) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        backgroundColor: "#06050C",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "'Inter', sans-serif",
+        color: "#FFF",
+        position: "relative",
+        overflow: "hidden"
+      }}>
+        {/* Background Blobs */}
+        <div style={{ position: "absolute", top: "-10%", left: "-5%", width: 450, height: 450, backgroundColor: "rgba(255, 74, 112, 0.15)", borderRadius: "50%", filter: "blur(110px)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: "20%", right: "-10%", width: 550, height: 550, backgroundColor: "rgba(0, 240, 255, 0.15)", borderRadius: "50%", filter: "blur(130px)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "-10%", left: "25%", width: 400, height: 400, backgroundColor: "rgba(112, 38, 232, 0.15)", borderRadius: "50%", filter: "blur(100px)", pointerEvents: "none" }} />
+
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40, zIndex: 10 }}>
+          <svg style={{ width: 54, height: 54, filter: "drop-shadow(0 4px 8px rgba(112,38,232,0.35))" }} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#00F0FF" />
+                <stop offset="50%" stopColor="#7026E8" />
+                <stop offset="100%" stopColor="#FF4A70" />
+              </linearGradient>
+            </defs>
+            <path d="M10 30L20 10L30 30" stroke="url(#logoGrad)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M15 20H25" stroke="url(#logoGrad)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M20 10V30" stroke="url(#logoGrad)" strokeWidth="2.5" strokeDasharray="3 3" strokeLinecap="round" />
+            <circle cx="20" cy="10" r="3.5" fill="#00F0FF" />
+            <circle cx="10" cy="30" r="3.5" fill="#7026E8" />
+            <circle cx="30" cy="30" r="3.5" fill="#FF4A70" />
+          </svg>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontWeight: 800, fontSize: 38, letterSpacing: "0.05em", color: "#F8FAFC", lineHeight: 1, fontFamily: "'Orbitron', sans-serif" }}>StaJob</span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ textAlign: "center", zIndex: 10, maxWidth: 600, padding: "0 24px" }}>
+          <h1 style={{ fontSize: 48, fontWeight: 800, marginBottom: 24, background: "linear-gradient(to right, #00F0FF, #A855F7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            Lancement Imminent
+          </h1>
+          <p style={{ fontSize: 18, color: "#94A3B8", lineHeight: 1.6, marginBottom: 40 }}>
+            Notre plateforme propulsée par l'IA est en cours de déploiement. Nous peaufinons les derniers détails pour vous offrir la meilleure expérience possible.
+          </p>
+          <div style={{ display: "inline-block", padding: "14px 28px", background: "rgba(112, 38, 232, 0.15)", border: "1px solid rgba(168, 85, 247, 0.3)", borderRadius: 50, color: "#A855F7", fontWeight: 600, fontSize: 15, boxShadow: "0 10px 30px rgba(112, 38, 232, 0.2)" }}>
+            🚀 Revenez d'ici quelques minutes !
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
