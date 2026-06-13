@@ -34,7 +34,7 @@ const ai = new GoogleGenAI({
 });
 
 // Initialize payment integrations
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 if (process.env.FEDAPAY_SECRET_KEY) {
   FedaPay.setApiKey(process.env.FEDAPAY_SECRET_KEY);
   const environment = process.env.FEDAPAY_SECRET_KEY.startsWith("sk_live") ? "live" : "sandbox";
@@ -301,6 +301,9 @@ const getOrCreateProfile = async (userId) => {
 // 1. Stripe Checkout Session Creator
 app.post("/api/payment/stripe/create-session", checkAuth, async (req, res) => {
   try {
+    if (!stripe) {
+      return res.status(500).json({ error: "Stripe n'est pas configuré sur ce serveur." });
+    }
     const { priceId } = req.body;
     if (!priceId) {
       return res.status(400).json({ error: "priceId est requis." });
@@ -346,6 +349,9 @@ app.post("/api/payment/stripe/create-session", checkAuth, async (req, res) => {
 // 2. Stripe Customer Portal Session Creator
 app.post("/api/payment/stripe/create-portal", checkAuth, async (req, res) => {
   try {
+    if (!stripe) {
+      return res.status(500).json({ error: "Stripe n'est pas configuré sur ce serveur." });
+    }
     const profile = await getOrCreateProfile(req.user.id);
     const stripeCustomerId = profile?.stripe_customer_id;
     if (!stripeCustomerId) {
@@ -367,6 +373,9 @@ app.post("/api/payment/stripe/create-portal", checkAuth, async (req, res) => {
 // 3. FedaPay Session Creator (Mobile Money)
 app.post("/api/payment/fedapay/create-session", checkAuth, async (req, res) => {
   try {
+    if (!process.env.FEDAPAY_SECRET_KEY) {
+      return res.status(500).json({ error: "FedaPay n'est pas configuré sur ce serveur." });
+    }
     const { amount, planId } = req.body;
     if (!amount || !planId) {
       return res.status(400).json({ error: "amount et planId sont requis." });
@@ -404,6 +413,9 @@ app.post("/api/payment/fedapay/create-session", checkAuth, async (req, res) => {
 
 // 4. Stripe Webhook Handler
 app.post("/api/payment/stripe/webhook", async (req, res) => {
+  if (!stripe) {
+    return res.status(500).send("Stripe n'est pas configuré.");
+  }
   const sig = req.headers["stripe-signature"];
   let event;
 
