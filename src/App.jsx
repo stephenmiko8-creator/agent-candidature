@@ -65,29 +65,39 @@ function App() {
     }
   }, [user]);
 
-  // Monitor Supabase auth session
+  // Monitor Supabase auth session and Ping DB to keep project active
   useEffect(() => {
-    if (supabase && supabase.auth) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          setUser(session.user);
-          setToken(session.access_token);
-        }
-      });
+    if (supabase) {
+      // 1. Ping the database to keep the Supabase Free Tier project active
+      if (supabase.from) {
+        supabase.from('job_offers').select('id').limit(1)
+          .then(() => console.log("Supabase Ping OK"))
+          .catch(() => {});
+      }
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session) {
-          setUser(session.user);
-          setToken(session.access_token);
-        } else {
-          setUser(null);
-          setToken(null);
-        }
-      });
+      // 2. Monitor auth
+      if (supabase.auth) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            setUser(session.user);
+            setToken(session.access_token);
+          }
+        });
 
-      return () => {
-        if (subscription) subscription.unsubscribe();
-      };
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (session) {
+            setUser(session.user);
+            setToken(session.access_token);
+          } else {
+            setUser(null);
+            setToken(null);
+          }
+        });
+
+        return () => {
+          if (subscription) subscription.unsubscribe();
+        };
+      }
     }
   }, []);
 
